@@ -1,0 +1,45 @@
+### Java / Maven (backend) ###
+HELP.md
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### Node / Frontend (React/Angular/Vue - whichever you pick later) ###
+node_modules/
+dist/
+build/
+.next/
+.nuxt/
+.env
+.env.local
+.env.*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+### .NET (Payment microservice, Step 20) ###
+bin/
+obj/
+*.user
+*.suo
+
+### IDE ###
+.idea/
+*.iws
+*.iml
+*.ipr
+.vscode/
+.settings/
+.classpath
+.project
+.metadata/
+
+### OS ###
+.DS_Store
+Thumbs.db
+
+### Environment / Secrets (all services) ###
+.env
+*.env

@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: StaySphere_Backend
+  profiles:
+    active: dev
+    
+
+server:
+  port: 8080
