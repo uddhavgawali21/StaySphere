@@ -42,4 +42,4 @@ Thumbs.db
 
 ### Environment / Secrets (all services) ###
 .env
-*.env
+*.env.factorypath

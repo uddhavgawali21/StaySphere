@@ -7,7 +7,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: none   # We control DDL manually / via entities+validate later. See explanation.
+      ddl-auto: validate   # We control DDL manually / via entities+validate later. See explanation.
     show-sql: true
     properties:
       hibernate:
