@@ -76,4 +76,4 @@ public class BookingController {
         return ResponseEntity.ok(
                 bookingService.cancelBooking(bookingId, "tenant@gmail.com"));
     }
-}
+} 
