@@ -4,6 +4,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import com.rms.dtos.PropertyCreateDTO;
@@ -21,10 +23,10 @@ public class PropertyController {
     private final PropertyService propertyService;
 
     @PostMapping
-    public ResponseEntity<PropertyResponseDTO> createProperty(
-            @Valid @RequestBody PropertyCreateDTO dto) {
-
-        PropertyResponseDTO response = propertyService.createProperty("owner@gmail.com", dto);
+    @PreAuthorize("hasRole('OWNER')")
+    public ResponseEntity<PropertyResponseDTO> createProperty(@Valid @RequestBody PropertyCreateDTO dto,
+                                                                Authentication authentication) {
+        PropertyResponseDTO response = propertyService.createProperty(authentication.getName(), dto);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
@@ -39,18 +41,17 @@ public class PropertyController {
     }
 
     @PutMapping("/{propertyId}")
-    public ResponseEntity<PropertyResponseDTO> updateProperty(
-            @PathVariable Long propertyId,
-            @Valid @RequestBody PropertyUpdateDTO dto) {
-
-        return ResponseEntity.ok(
-                propertyService.updateProperty(propertyId, "owner@gmail.com", dto));
+    @PreAuthorize("hasRole('OWNER')")
+    public ResponseEntity<PropertyResponseDTO> updateProperty(@PathVariable Long propertyId,
+                                                                @Valid @RequestBody PropertyUpdateDTO dto,
+                                                                Authentication authentication) {
+        return ResponseEntity.ok(propertyService.updateProperty(propertyId, authentication.getName(), dto));
     }
 
     @DeleteMapping("/{propertyId}")
-    public ResponseEntity<Void> deleteProperty(@PathVariable Long propertyId) {
-
-        propertyService.deleteProperty(propertyId, "owner@gmail.com");
+    @PreAuthorize("hasRole('OWNER')")
+    public ResponseEntity<Void> deleteProperty(@PathVariable Long propertyId, Authentication authentication) {
+        propertyService.deleteProperty(propertyId, authentication.getName());
         return ResponseEntity.noContent().build();
     }
 }

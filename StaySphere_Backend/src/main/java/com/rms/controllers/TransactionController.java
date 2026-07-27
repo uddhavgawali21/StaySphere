@@ -4,6 +4,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import com.rms.dtos.TransactionCreateDTO;
@@ -21,40 +23,28 @@ public class TransactionController {
     private final TransactionService transactionService;
 
     @PostMapping
-    public ResponseEntity<TransactionResponseDTO> createTransaction(
-            @Valid @RequestBody TransactionCreateDTO dto) {
-
-        TransactionResponseDTO response =
-                transactionService.createTransaction("tenant@gmail.com", dto);
-
+    @PreAuthorize("hasRole('TENANT')")
+    public ResponseEntity<TransactionResponseDTO> createTransaction(@Valid @RequestBody TransactionCreateDTO dto,
+                                                                      Authentication authentication) {
+        TransactionResponseDTO response = transactionService.createTransaction(authentication.getName(), dto);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
     @GetMapping("/{transactionId}")
-    public ResponseEntity<TransactionResponseDTO> getTransaction(
-            @PathVariable Long transactionId) {
-
-        return ResponseEntity.ok(
-                transactionService.getTransactionById(transactionId));
+    public ResponseEntity<TransactionResponseDTO> getTransaction(@PathVariable Long transactionId) {
+        return ResponseEntity.ok(transactionService.getTransactionById(transactionId));
     }
 
     @GetMapping("/booking/{bookingId}")
-    public ResponseEntity<List<TransactionResponseDTO>> getTransactionsByBooking(
-            @PathVariable Long bookingId) {
-
-        return ResponseEntity.ok(
-                transactionService.getTransactionsByBooking(bookingId));
+    public ResponseEntity<List<TransactionResponseDTO>> getTransactionsByBooking(@PathVariable Long bookingId) {
+        return ResponseEntity.ok(transactionService.getTransactionsByBooking(bookingId));
     }
 
     @PutMapping("/{transactionId}/status")
-    public ResponseEntity<TransactionResponseDTO> updateStatus(
-            @PathVariable Long transactionId,
-            @Valid @RequestBody TransactionStatusUpdateDTO dto) {
-
-        return ResponseEntity.ok(
-                transactionService.updateTransactionStatus(
-                        transactionId,
-                        "tenant@gmail.com",
-                        dto));
+    @PreAuthorize("hasRole('TENANT')")
+    public ResponseEntity<TransactionResponseDTO> updateStatus(@PathVariable Long transactionId,
+                                                                 @Valid @RequestBody TransactionStatusUpdateDTO dto,
+                                                                 Authentication authentication) {
+        return ResponseEntity.ok(transactionService.updateTransactionStatus(transactionId, authentication.getName(), dto));
     }
 }
