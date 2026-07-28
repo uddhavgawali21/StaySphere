@@ -51,8 +51,12 @@ public class SecurityConfig {
 
                         // Swagger (optional)
                         .requestMatchers(
-                                "/swagger-ui/**",
-                                "/v3/api-docs/**"
+                                 "/swagger-ui/**",
+                            "/swagger-ui.html",
+                            "/v3/api-docs/**",
+                            "/v3/api-docs",
+                            "/swagger-resources/**",
+                            "/webjars/**"
                         ).permitAll()
 
                         // Everything else requires JWT
@@ -61,7 +65,6 @@ public class SecurityConfig {
 
                 .addFilterBefore(jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class);
-
         return http.build();
     }
 
