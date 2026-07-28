@@ -1,0 +1,54 @@
+.navbar {
+  background: var(--ink);
+  border-bottom: 3px solid var(--brass);
+}
+.navbar-inner {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  height: 68px;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  color: var(--dawn);
+  flex-shrink: 0;
+}
+.brand-mark {
+  color: var(--brass);
+  font-size: 1.1rem;
+}
+.nav-links {
+  display: flex;
+  gap: 24px;
+  flex: 1;
+}
+.nav-links a {
+  color: #C7CEDD;
+  font-size: 0.92rem;
+  font-weight: 500;
+}
+.nav-links a:hover { color: var(--dawn); }
+
+.nav-auth {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.nav-user {
+  color: var(--dawn);
+  font-size: 0.9rem;
+  font-family: var(--font-mono);
+}
+.nav-auth .btn-outline {
+  color: var(--dawn);
+  border-color: #445077;
+}
+.nav-auth .btn-outline:hover { border-color: var(--dawn); }
+
+@media (max-width: 720px) {
+  .nav-links { display: none; }
+}
