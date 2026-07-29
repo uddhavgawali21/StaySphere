@@ -1,0 +1,22 @@
+.booking-list { display: flex; flex-direction: column; gap: 14px; margin-top: 24px; }
+.booking-row {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px 22px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.booking-meta { font-size: 0.85rem; color: var(--ink-soft); margin-bottom: 2px; }
+.booking-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.pay-form { display: flex; gap: 8px; align-items: center; }
+.pay-form input, .pay-form select {
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  font-size: 0.85rem;
+  width: 110px;
+}

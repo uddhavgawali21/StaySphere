@@ -1,0 +1,19 @@
+.section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.owner-property-list { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
+.owner-property-row {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.owner-property-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }

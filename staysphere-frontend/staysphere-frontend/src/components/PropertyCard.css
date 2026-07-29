@@ -1,0 +1,73 @@
+.property-card {
+  display: block;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  overflow: visible;
+  box-shadow: var(--shadow-card);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  position: relative;
+}
+.property-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 6px rgba(22,33,62,0.08), 0 16px 32px rgba(22,33,62,0.14);
+}
+
+/* The archway — a doorway silhouette standing in for a photo slot */
+.property-arch {
+  height: 148px;
+  margin: 16px 16px 0;
+  border-radius: 60% 60% 8px 8px;
+  background: linear-gradient(155deg, var(--ink) 0%, #29365C 65%, var(--brass) 155%);
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  padding: 14px;
+}
+.property-arch-type {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.75);
+}
+
+/* Key tag hanging off the top-right corner of the arch */
+.property-tag {
+  position: absolute;
+  top: -10px;
+  right: 10px;
+  background: var(--brass);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 0.85rem;
+  padding: 6px 12px 6px 10px;
+  border-radius: 4px 12px 12px 4px;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.18);
+}
+.property-tag::before {
+  content: '';
+  position: absolute;
+  left: -4px;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--paper);
+  transform: translateY(-50%);
+  box-shadow: inset 0 0 0 1.5px var(--ink);
+}
+.property-tag small { font-size: 0.62rem; opacity: 0.75; margin-left: 2px; }
+
+.property-body { padding: 18px 20px 22px; }
+.property-body h3 { font-size: 1.08rem; margin-bottom: 4px; }
+.property-location { color: var(--ink-soft); font-size: 0.88rem; margin-bottom: 10px; }
+.property-meta {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.property-meta .dot { color: var(--brass); }
