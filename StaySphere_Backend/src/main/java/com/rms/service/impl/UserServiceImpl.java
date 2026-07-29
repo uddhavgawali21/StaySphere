@@ -6,13 +6,17 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.rms.dtos.AuthResponseDTO;
+import com.rms.dtos.UserLoginDTO;
 import com.rms.dtos.UserRegisterDTO;
 import com.rms.dtos.UserResponseDTO;
 import com.rms.entity.User;
 import com.rms.enums.AccountStatus;
 import com.rms.exceptions.DuplicateResourceException;
+import com.rms.exceptions.InvalidCredentialsException;
 import com.rms.exceptions.ResourceNotFoundException;
 import com.rms.repository.UserRepository;
+import com.rms.security.JwtUtil;
 import com.rms.service.UserService;
 
 @Service
@@ -21,6 +25,7 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtUtil jwtUtil;
 
     @Override
     @Transactional
@@ -51,6 +56,27 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
         return mapToResponseDTO(user);
+    }
+
+    @Override
+    public AuthResponseDTO login(UserLoginDTO dto) {
+        User user = userRepository.findByEmail(dto.getEmail())
+                .orElseThrow(() -> new InvalidCredentialsException("Invalid email or password"));
+
+        if (!passwordEncoder.matches(dto.getPassword(), user.getPassword())) {
+            throw new InvalidCredentialsException("Invalid email or password");
+        }
+
+        if (user.getAccountStatus() != AccountStatus.ACTIVE) {
+            throw new InvalidCredentialsException("Account is not active");
+        }
+
+        String token = jwtUtil.generateToken(user);
+
+        return AuthResponseDTO.builder()
+                .token(token)
+                .user(mapToResponseDTO(user))
+                .build();
     }
 
     private UserResponseDTO mapToResponseDTO(User user) {

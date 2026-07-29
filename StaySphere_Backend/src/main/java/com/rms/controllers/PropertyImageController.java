@@ -4,6 +4,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import com.rms.dtos.PropertyImageCreateDTO;
@@ -20,37 +22,30 @@ public class PropertyImageController {
     private final PropertyImageService propertyImageService;
 
     @PostMapping("/{propertyId}/images")
-    public ResponseEntity<PropertyImageResponseDTO> addImage(
-            @PathVariable Long propertyId,
-            @Valid @RequestBody PropertyImageCreateDTO dto) {
-
-        PropertyImageResponseDTO response =
-                propertyImageService.addImage(propertyId, "owner@gmail.com", dto);
-
+    @PreAuthorize("hasRole('OWNER')")
+    public ResponseEntity<PropertyImageResponseDTO> addImage(@PathVariable Long propertyId,
+                                                               @Valid @RequestBody PropertyImageCreateDTO dto,
+                                                               Authentication authentication) {
+        PropertyImageResponseDTO response = propertyImageService.addImage(propertyId, authentication.getName(), dto);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
     @GetMapping("/{propertyId}/images")
-    public ResponseEntity<List<PropertyImageResponseDTO>> getImages(
-            @PathVariable Long propertyId) {
-
-        return ResponseEntity.ok(
-                propertyImageService.getImagesByProperty(propertyId));
+    public ResponseEntity<List<PropertyImageResponseDTO>> getImages(@PathVariable Long propertyId) {
+        return ResponseEntity.ok(propertyImageService.getImagesByProperty(propertyId));
     }
 
     @PutMapping("/images/{imageId}/primary")
-    public ResponseEntity<PropertyImageResponseDTO> setPrimaryImage(
-            @PathVariable Long imageId) {
-
-        return ResponseEntity.ok(
-                propertyImageService.setPrimaryImage(imageId, "owner@gmail.com"));
+    @PreAuthorize("hasRole('OWNER')")
+    public ResponseEntity<PropertyImageResponseDTO> setPrimaryImage(@PathVariable Long imageId,
+                                                                      Authentication authentication) {
+        return ResponseEntity.ok(propertyImageService.setPrimaryImage(imageId, authentication.getName()));
     }
 
     @DeleteMapping("/images/{imageId}")
-    public ResponseEntity<Void> deleteImage(
-            @PathVariable Long imageId) {
-
-        propertyImageService.deleteImage(imageId, "owner@gmail.com");
+    @PreAuthorize("hasRole('OWNER')")
+    public ResponseEntity<Void> deleteImage(@PathVariable Long imageId, Authentication authentication) {
+        propertyImageService.deleteImage(imageId, authentication.getName());
         return ResponseEntity.noContent().build();
     }
 }

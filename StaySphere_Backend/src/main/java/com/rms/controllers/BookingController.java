@@ -4,6 +4,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import com.rms.dtos.BookingCreateDTO;
@@ -20,60 +22,43 @@ public class BookingController {
     private final BookingService bookingService;
 
     @PostMapping
-    public ResponseEntity<BookingResponseDTO> createBooking(
-            @Valid @RequestBody BookingCreateDTO dto) {
-
-        BookingResponseDTO response =
-                bookingService.createBooking("tenant@gmail.com", dto);
-
+    @PreAuthorize("hasRole('TENANT')")
+    public ResponseEntity<BookingResponseDTO> createBooking(@Valid @RequestBody BookingCreateDTO dto,
+                                                              Authentication authentication) {
+        BookingResponseDTO response = bookingService.createBooking(authentication.getName(), dto);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
     @GetMapping("/{bookingId}")
-    public ResponseEntity<BookingResponseDTO> getBooking(
-            @PathVariable Long bookingId) {
-
-        return ResponseEntity.ok(
-                bookingService.getBookingById(bookingId));
+    public ResponseEntity<BookingResponseDTO> getBooking(@PathVariable Long bookingId) {
+        return ResponseEntity.ok(bookingService.getBookingById(bookingId));
     }
 
     @GetMapping("/tenant/{tenantId}")
-    public ResponseEntity<List<BookingResponseDTO>> getBookingsByTenant(
-            @PathVariable Long tenantId) {
-
-        return ResponseEntity.ok(
-                bookingService.getBookingsByTenant(tenantId));
+    public ResponseEntity<List<BookingResponseDTO>> getBookingsByTenant(@PathVariable Long tenantId) {
+        return ResponseEntity.ok(bookingService.getBookingsByTenant(tenantId));
     }
 
     @GetMapping("/property/{propertyId}")
-    public ResponseEntity<List<BookingResponseDTO>> getBookingsByProperty(
-            @PathVariable Long propertyId) {
-
-        return ResponseEntity.ok(
-                bookingService.getBookingsByProperty(propertyId));
+    public ResponseEntity<List<BookingResponseDTO>> getBookingsByProperty(@PathVariable Long propertyId) {
+        return ResponseEntity.ok(bookingService.getBookingsByProperty(propertyId));
     }
 
     @PutMapping("/{bookingId}/confirm")
-    public ResponseEntity<BookingResponseDTO> confirmBooking(
-            @PathVariable Long bookingId) {
-
-        return ResponseEntity.ok(
-                bookingService.confirmBooking(bookingId, "owner@gmail.com"));
+    @PreAuthorize("hasRole('OWNER')")
+    public ResponseEntity<BookingResponseDTO> confirmBooking(@PathVariable Long bookingId, Authentication authentication) {
+        return ResponseEntity.ok(bookingService.confirmBooking(bookingId, authentication.getName()));
     }
 
     @PutMapping("/{bookingId}/reject")
-    public ResponseEntity<BookingResponseDTO> rejectBooking(
-            @PathVariable Long bookingId) {
-
-        return ResponseEntity.ok(
-                bookingService.rejectBooking(bookingId, "owner@gmail.com"));
+    @PreAuthorize("hasRole('OWNER')")
+    public ResponseEntity<BookingResponseDTO> rejectBooking(@PathVariable Long bookingId, Authentication authentication) {
+        return ResponseEntity.ok(bookingService.rejectBooking(bookingId, authentication.getName()));
     }
 
     @PutMapping("/{bookingId}/cancel")
-    public ResponseEntity<BookingResponseDTO> cancelBooking(
-            @PathVariable Long bookingId) {
-
-        return ResponseEntity.ok(
-                bookingService.cancelBooking(bookingId, "tenant@gmail.com"));
+    @PreAuthorize("hasRole('TENANT')")
+    public ResponseEntity<BookingResponseDTO> cancelBooking(@PathVariable Long bookingId, Authentication authentication) {
+        return ResponseEntity.ok(bookingService.cancelBooking(bookingId, authentication.getName()));
     }
-} 
+}
