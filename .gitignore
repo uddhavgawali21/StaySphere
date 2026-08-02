@@ -43,3 +43,4 @@ Thumbs.db
 ### Environment / Secrets (all services) ###
 .env
 *.env.factorypath
+.zip

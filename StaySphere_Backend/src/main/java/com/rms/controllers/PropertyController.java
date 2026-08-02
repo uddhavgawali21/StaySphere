@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.rms.dtos.PropertyCreateDTO;
 import com.rms.dtos.PropertyResponseDTO;
+import com.rms.dtos.PropertyStatusUpdateDTO;
 import com.rms.dtos.PropertyUpdateDTO;
 import com.rms.enums.OccupancyType;
 import com.rms.enums.PropertyType;
@@ -74,5 +75,11 @@ public class PropertyController {
 	public ResponseEntity<Void> deleteProperty(@PathVariable Long propertyId, Authentication authentication) {
 		propertyService.deleteProperty(propertyId, authentication.getName());
 		return ResponseEntity.noContent().build();
+	}
+	@PatchMapping("/{propertyId}/status")
+	@PreAuthorize("hasRole('OWNER')")
+	public ResponseEntity<PropertyResponseDTO> updatePropertyStatus(@PathVariable Long propertyId,
+	        @Valid @RequestBody PropertyStatusUpdateDTO dto, Authentication authentication) {
+	    return ResponseEntity.ok(propertyService.updatePropertyStatus(propertyId, authentication.getName(), dto));
 	}
 }
