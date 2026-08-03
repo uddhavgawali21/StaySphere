@@ -1,0 +1,34 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: payment-service
+  datasource:
+    url: jdbc:mysql://localhost:3306/staysphere_payment_db?useSSL=false&serverTimezone=UTC&createDatabaseIfNotExist=true
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    # This microservice owns its schema (unlike the main StaySphere backend, which is
+    # database-first against a schema someone else maintains) — safe to let Hibernate
+    # manage its one small table.
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
+
+razorpay:
+  key-id: rzp_test_TLFSTSLCpuKAzW
+  key-secret: qAhdWTJ2ysVFTgE1j4Ompi8r
+  webhook-secret: YOUR_WEBHOOK_SECRET_HERE
+  base-url: https://api.razorpay.com/v1
+
+logging:
+  level:
+    com.staysphere.payment: INFO
+  pattern:
+    console: "%d{HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
