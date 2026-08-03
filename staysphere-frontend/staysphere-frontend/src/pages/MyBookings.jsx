@@ -100,9 +100,7 @@ export default function MyBookings() {
           {bookings.map((booking) => {
             const transactions = transactionsByBooking[booking.bookingId] || []
             const latestTransaction = transactions[transactions.length - 1]
-            const canPay = booking.bookingStatus === 'REQUESTED' && !latestTransaction
-            const canCancel = ['REQUESTED', 'PAYMENT_PENDING'].includes(booking.bookingStatus)
-
+            const canPay = booking.bookingStatus === 'PAYMENT_PENDING' && !latestTransaction
             return (
               <div key={booking.bookingId} className="booking-row">
                 <div>
