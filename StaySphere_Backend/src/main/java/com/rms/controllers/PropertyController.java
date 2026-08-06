@@ -82,4 +82,5 @@ public class PropertyController {
 	        @Valid @RequestBody PropertyStatusUpdateDTO dto, Authentication authentication) {
 	    return ResponseEntity.ok(propertyService.updatePropertyStatus(propertyId, authentication.getName(), dto));
 	}
+
 }

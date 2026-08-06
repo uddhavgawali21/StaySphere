@@ -10,6 +10,10 @@ import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
 
+
+// Static helper only — builds the WHERE clause for property search dynamically
+// based on which filters the caller actually passed in.
+
 public class PropertySpecification {
 
     private PropertySpecification() {

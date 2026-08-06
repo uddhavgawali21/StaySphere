@@ -8,9 +8,10 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import com.rms.dtos.TransactionCheckoutResponseDTO;
 import com.rms.dtos.TransactionCreateDTO;
 import com.rms.dtos.TransactionResponseDTO;
-import com.rms.dtos.TransactionStatusUpdateDTO;
+import com.rms.dtos.TransactionVerifyRequestDTO;
 import com.rms.service.TransactionService;
 
 import java.util.List;
@@ -22,12 +23,24 @@ public class TransactionController {
 
     private final TransactionService transactionService;
 
-    @PostMapping
+
+    // Creates the local PENDING transaction + a Razorpay order. The frontend
+    // uses the response to open Razorpay Checkout.
+    @PostMapping("/checkout")
     @PreAuthorize("hasRole('TENANT')")
-    public ResponseEntity<TransactionResponseDTO> createTransaction(@Valid @RequestBody TransactionCreateDTO dto,
-                                                                      Authentication authentication) {
-        TransactionResponseDTO response = transactionService.createTransaction(authentication.getName(), dto);
+    public ResponseEntity<TransactionCheckoutResponseDTO> checkout(@Valid @RequestBody TransactionCreateDTO dto,
+                                                                     Authentication authentication) {
+        TransactionCheckoutResponseDTO response = transactionService.checkout(authentication.getName(), dto);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
+    }
+
+    // Called after Razorpay Checkout completes, with the three values it returns.
+    @PostMapping("/{transactionId}/verify")
+    @PreAuthorize("hasRole('TENANT')")
+    public ResponseEntity<TransactionResponseDTO> verify(@PathVariable Long transactionId,
+                                                           @Valid @RequestBody TransactionVerifyRequestDTO dto,
+                                                           Authentication authentication) {
+        return ResponseEntity.ok(transactionService.verifyPayment(transactionId, authentication.getName(), dto));
     }
 
     @GetMapping("/{transactionId}")
@@ -38,13 +51,6 @@ public class TransactionController {
     @GetMapping("/booking/{bookingId}")
     public ResponseEntity<List<TransactionResponseDTO>> getTransactionsByBooking(@PathVariable Long bookingId) {
         return ResponseEntity.ok(transactionService.getTransactionsByBooking(bookingId));
-    }
 
-    @PutMapping("/{transactionId}/status")
-    @PreAuthorize("hasRole('TENANT')")
-    public ResponseEntity<TransactionResponseDTO> updateStatus(@PathVariable Long transactionId,
-                                                                 @Valid @RequestBody TransactionStatusUpdateDTO dto,
-                                                                 Authentication authentication) {
-        return ResponseEntity.ok(transactionService.updateTransactionStatus(transactionId, authentication.getName(), dto));
     }
 }

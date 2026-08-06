@@ -1,4 +1,8 @@
-package com.rms.exceptionHandler;
+package com.staysphere.payment.exceptionHandler;
+
+import com.staysphere.payment.exception.DuplicateTransactionException;
+import com.staysphere.payment.exception.PaymentNotFoundException;
+import com.staysphere.payment.exception.RazorpayException;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -7,14 +11,6 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-
-import com.rms.exceptions.DuplicateResourceException;
-import com.rms.exceptions.InvalidBookingStateException;
-import com.rms.exceptions.InvalidCredentialsException;
-import com.rms.exceptions.PaymentServiceException;
-
-import com.rms.exceptions.ResourceNotFoundException;
-import com.rms.exceptions.UnauthorizedActionException;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -25,42 +21,22 @@ import java.util.UUID;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<Map<String, Object>> handleNotFound(ResourceNotFoundException ex) {
-        log.warn("Resource not found: {}", ex.getMessage());
+    @ExceptionHandler(PaymentNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleNotFound(PaymentNotFoundException ex) {
+        log.warn("Payment not found: {}", ex.getMessage());
         return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage(), null);
     }
 
-    @ExceptionHandler(DuplicateResourceException.class)
-    public ResponseEntity<Map<String, Object>> handleDuplicate(DuplicateResourceException ex) {
-        log.warn("Duplicate resource: {}", ex.getMessage());
+    @ExceptionHandler(DuplicateTransactionException.class)
+    public ResponseEntity<Map<String, Object>> handleDuplicate(DuplicateTransactionException ex) {
+        log.warn("Duplicate transaction: {}", ex.getMessage());
         return buildResponse(HttpStatus.CONFLICT, ex.getMessage(), null);
     }
 
-    @ExceptionHandler(InvalidCredentialsException.class)
-    public ResponseEntity<Map<String, Object>> handleInvalidCredentials(InvalidCredentialsException ex) {
-
-        log.warn("Invalid credentials attempt: {}", ex.getMessage());
-        return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage(), null);
-
-    }
-
-    @ExceptionHandler(UnauthorizedActionException.class)
-    public ResponseEntity<Map<String, Object>> handleUnauthorized(UnauthorizedActionException ex) {
-        log.warn("Unauthorized action: {}", ex.getMessage());
-        return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage(), null);
-    }
-
-    @ExceptionHandler(InvalidBookingStateException.class)
-    public ResponseEntity<Map<String, Object>> handleInvalidBookingState(InvalidBookingStateException ex) {
-        log.warn("Invalid booking state transition: {}", ex.getMessage());
-        return buildResponse(HttpStatus.CONFLICT, ex.getMessage(), null);
-    }
-
-    @ExceptionHandler(PaymentServiceException.class)
-    public ResponseEntity<Map<String, Object>> handlePaymentServiceError(PaymentServiceException ex) {
+    @ExceptionHandler(RazorpayException.class)
+    public ResponseEntity<Map<String, Object>> handleRazorpay(RazorpayException ex) {
         String correlationId = UUID.randomUUID().toString();
-        log.error("Payment microservice call failed [{}]: {}", correlationId, ex.getMessage(), ex);
+        log.error("Razorpay error [{}]: {}", correlationId, ex.getMessage(), ex);
         return buildResponse(HttpStatus.BAD_GATEWAY, ex.getMessage(), correlationId);
     }
 

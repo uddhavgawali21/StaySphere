@@ -38,4 +38,5 @@ public interface PropertyService {
                         String requesterEmail);
     
     PropertyResponseDTO updatePropertyStatus(Long propertyId, String requesterEmail, PropertyStatusUpdateDTO dto);
+
 }

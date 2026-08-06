@@ -152,5 +152,4 @@ public class PropertyServiceImpl implements PropertyService {
 				.createdAt(property.getCreatedAt()).updatedAt(property.getUpdatedAt()).build();
 	}
 
-	
 }
