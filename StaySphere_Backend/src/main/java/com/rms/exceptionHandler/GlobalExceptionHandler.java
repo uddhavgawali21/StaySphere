@@ -12,6 +12,7 @@ import com.rms.exceptions.DuplicateResourceException;
 import com.rms.exceptions.InvalidBookingStateException;
 import com.rms.exceptions.InvalidCredentialsException;
 import com.rms.exceptions.PaymentServiceException;
+
 import com.rms.exceptions.ResourceNotFoundException;
 import com.rms.exceptions.UnauthorizedActionException;
 
@@ -38,8 +39,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(InvalidCredentialsException.class)
     public ResponseEntity<Map<String, Object>> handleInvalidCredentials(InvalidCredentialsException ex) {
+
         log.warn("Invalid credentials attempt: {}", ex.getMessage());
         return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage(), null);
+
     }
 
     @ExceptionHandler(UnauthorizedActionException.class)

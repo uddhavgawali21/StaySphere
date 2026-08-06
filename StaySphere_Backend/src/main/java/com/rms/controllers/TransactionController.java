@@ -23,6 +23,7 @@ public class TransactionController {
 
     private final TransactionService transactionService;
 
+
     // Creates the local PENDING transaction + a Razorpay order. The frontend
     // uses the response to open Razorpay Checkout.
     @PostMapping("/checkout")
@@ -50,5 +51,6 @@ public class TransactionController {
     @GetMapping("/booking/{bookingId}")
     public ResponseEntity<List<TransactionResponseDTO>> getTransactionsByBooking(@PathVariable Long bookingId) {
         return ResponseEntity.ok(transactionService.getTransactionsByBooking(bookingId));
+
     }
 }

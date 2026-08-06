@@ -87,7 +87,7 @@ public class BookingServiceImpl implements BookingService {
         validatePropertyOwnership(booking.getProperty(), ownerEmail);
         validatePendingState(booking);
 
-        booking.setBookingStatus(BookingStatus.CONFIRMED);
+        booking.setBookingStatus(BookingStatus.PAYMENT_PENDING);
         Booking updated = bookingRepository.save(booking);
         return mapToResponseDTO(updated);
     }

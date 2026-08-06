@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.rms.dtos.PropertyCreateDTO;
 import com.rms.dtos.PropertyResponseDTO;
+import com.rms.dtos.PropertyStatusUpdateDTO;
 import com.rms.dtos.PropertyUpdateDTO;
 import com.rms.entity.Property;
 import com.rms.entity.User;
@@ -126,6 +127,19 @@ public class PropertyServiceImpl implements PropertyService {
 			throw new UnauthorizedActionException("You are not authorized to modify this property");
 		}
 	}
+	
+	@Override
+	@Transactional
+	public PropertyResponseDTO updatePropertyStatus(Long propertyId, String requesterEmail, PropertyStatusUpdateDTO dto) {
+	    Property property = propertyRepository.findById(propertyId)
+	            .orElseThrow(() -> new ResourceNotFoundException("Property not found with id: " + propertyId));
+
+	    validateOwnership(property, requesterEmail);
+
+	    property.setPropertyStatus(dto.getPropertyStatus());
+	    Property updated = propertyRepository.save(property);
+	    return mapToResponseDTO(updated);
+	}
 
 	private PropertyResponseDTO mapToResponseDTO(Property property) {
 		return PropertyResponseDTO.builder().propertyId(property.getPropertyId())
@@ -137,4 +151,5 @@ public class PropertyServiceImpl implements PropertyService {
 				.pincode(property.getPincode()).propertyStatus(property.getPropertyStatus())
 				.createdAt(property.getCreatedAt()).updatedAt(property.getUpdatedAt()).build();
 	}
+
 }

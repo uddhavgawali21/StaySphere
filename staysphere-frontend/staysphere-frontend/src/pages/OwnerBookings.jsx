@@ -71,7 +71,8 @@ export default function OwnerBookings() {
 
         <div className="booking-list">
           {bookings.map((booking) => {
-            const actionable = ['REQUESTED', 'PAYMENT_PENDING'].includes(booking.bookingStatus)
+            const canConfirm = booking.bookingStatus === 'REQUESTED'
+            const canReject = ['REQUESTED', 'PAYMENT_PENDING'].includes(booking.bookingStatus)
             return (
               <div key={booking.bookingId} className="booking-row">
                 <div>
@@ -80,14 +81,18 @@ export default function OwnerBookings() {
                 </div>
                 <div className="booking-actions">
                   <StatusBadge status={booking.bookingStatus} />
-                  {actionable && (
+                  {(canConfirm || canReject) && (
                     <>
-                      <button className="btn btn-primary btn-sm" onClick={() => handleConfirm(booking.bookingId)}>
-                        Confirm
-                      </button>
-                      <button className="btn btn-danger btn-sm" onClick={() => handleReject(booking.bookingId)}>
-                        Reject
-                      </button>
+                      {canConfirm && (
+                        <button className="btn btn-primary btn-sm" onClick={() => handleConfirm(booking.bookingId)}>
+                          Confirm
+                        </button>
+                      )}
+                      {canReject && (
+                        <button className="btn btn-danger btn-sm" onClick={() => handleReject(booking.bookingId)}>
+                          Reject
+                        </button>
+                      )}
                     </>
                   )}
                 </div>

@@ -47,8 +47,7 @@ public class TransactionServiceImpl implements TransactionService {
             throw new UnauthorizedActionException("You are not authorized to make payment for this booking");
         }
 
-        if (booking.getBookingStatus() != BookingStatus.REQUESTED
-                && booking.getBookingStatus() != BookingStatus.PAYMENT_PENDING) {
+        if (booking.getBookingStatus() != BookingStatus.PAYMENT_PENDING) {
             throw new InvalidBookingStateException("Booking is not eligible for payment: " + booking.getBookingStatus());
         }
 
