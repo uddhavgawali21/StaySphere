@@ -24,8 +24,11 @@ spring:
 razorpay:
   key-id: rzp_test_TLFSTSLCpuKAzW
   key-secret: qAhdWTJ2ysVFTgE1j4Ompi8r
-  webhook-secret: YOUR_WEBHOOK_SECRET_HERE
-  base-url: https://api.razorpay.com/v1
+  webhook-secret: ${RAZORPAY_WEBHOOK_SECRET:staysphere-college-project-webhook-secret-2026}
+  base-url: ${RAZORPAY_BASE_URL:https://api.razorpay.com/v1}
+
+internal:
+  api-key: ${INTERNAL_API_KEY:staysphere-college-project-internal-key-2026}
 
 logging:
   level:

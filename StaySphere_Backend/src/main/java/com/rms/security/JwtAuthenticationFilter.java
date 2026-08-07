@@ -12,6 +12,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.rms.enums.AccountStatus;
+import com.rms.repository.UserRepository;
+
 import java.io.IOException;
 import java.util.List;
 
@@ -20,6 +23,7 @@ import java.util.List;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
+    private final UserRepository userRepository;
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
@@ -35,13 +39,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String email = jwtUtil.extractEmail(token);
                 String role = jwtUtil.extractRole(token);
 
-                UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(
-                                email,
-                                null,
-                                List.of(new SimpleGrantedAuthority("ROLE_" + role)));
+                // A JWT stays cryptographically valid until it expires, but an admin
+                // suspending the account should take effect immediately rather than
+                // only on the next login — so re-check current status per request.
+                boolean isActive = userRepository.findByEmail(email)
+                        .map(user -> user.getAccountStatus() == AccountStatus.ACTIVE)
+                        .orElse(false);
 
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                if (isActive) {
+                    UsernamePasswordAuthenticationToken authentication =
+                            new UsernamePasswordAuthenticationToken(
+                                    email,
+                                    null,
+                                    List.of(new SimpleGrantedAuthority("ROLE_" + role)));
+
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                }
             }
         }
 

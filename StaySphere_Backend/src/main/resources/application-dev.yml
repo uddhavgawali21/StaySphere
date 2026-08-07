@@ -6,6 +6,9 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
+    # Database-first: db/schema-design.sql is the single source of truth.
+    # ddl-auto must stay "validate" so Hibernate checks the schema instead
+    # of silently altering hand-maintained tables/columns.
     hibernate:
       ddl-auto: validate
     show-sql: true
@@ -21,3 +24,4 @@ jwt:
 payment:
   service:
     base-url: ${PAYMENT_SERVICE_BASE_URL:http://localhost:8081}
+    internal-api-key: ${INTERNAL_API_KEY:staysphere-college-project-internal-key-2026}

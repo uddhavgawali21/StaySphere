@@ -15,6 +15,8 @@ import com.rms.enums.AccountStatus;
 import com.rms.exceptions.DuplicateResourceException;
 import com.rms.exceptions.InvalidCredentialsException;
 import com.rms.exceptions.ResourceNotFoundException;
+import com.rms.exceptions.UnauthorizedActionException;
+import com.rms.enums.Role;
 import com.rms.repository.UserRepository;
 import com.rms.security.JwtUtil;
 import com.rms.service.UserService;
@@ -37,6 +39,11 @@ public class UserServiceImpl implements UserService {
         if (userRepository.existsByPhone(dto.getPhone())) {
             throw new DuplicateResourceException("Phone already registered: " + dto.getPhone());
         }
+        // Public self-registration must never grant ADMIN — that role is
+        // provisioned separately, not chosen by the registering user.
+        if (dto.getRole() == Role.ADMIN) {
+            throw new UnauthorizedActionException("Cannot self-register with the ADMIN role");
+        }
 
         User user = new User();
         user.setFirstName(dto.getFirstName());
@@ -52,9 +59,14 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserResponseDTO getUserById(Long userId) {
+    public UserResponseDTO getUserById(Long userId, String requesterEmail) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+        // Self-lookup only — this endpoint is not the admin directory, so no one
+        // should be able to pull another user's email/phone by guessing an id.
+        if (!user.getEmail().equalsIgnoreCase(requesterEmail)) {
+            throw new UnauthorizedActionException("You are not authorized to view this user");
+        }
         return mapToResponseDTO(user);
     }
 

@@ -10,6 +10,6 @@ import java.util.List;
 public interface TransactionService {
     TransactionCheckoutResponseDTO checkout(String tenantEmail, TransactionCreateDTO dto);
     TransactionResponseDTO verifyPayment(Long transactionId, String tenantEmail, TransactionVerifyRequestDTO dto);
-    TransactionResponseDTO getTransactionById(Long transactionId);
-    List<TransactionResponseDTO> getTransactionsByBooking(Long bookingId);
+    TransactionResponseDTO getTransactionById(Long transactionId, String requesterEmail);
+    List<TransactionResponseDTO> getTransactionsByBooking(Long bookingId, String requesterEmail);
 }

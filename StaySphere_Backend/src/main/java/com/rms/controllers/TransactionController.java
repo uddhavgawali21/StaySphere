@@ -43,12 +43,14 @@ public class TransactionController {
     }
 
     @GetMapping("/{transactionId}")
-    public ResponseEntity<TransactionResponseDTO> getTransaction(@PathVariable Long transactionId) {
-        return ResponseEntity.ok(transactionService.getTransactionById(transactionId));
+    public ResponseEntity<TransactionResponseDTO> getTransaction(@PathVariable Long transactionId,
+                                                                   Authentication authentication) {
+        return ResponseEntity.ok(transactionService.getTransactionById(transactionId, authentication.getName()));
     }
 
     @GetMapping("/booking/{bookingId}")
-    public ResponseEntity<List<TransactionResponseDTO>> getTransactionsByBooking(@PathVariable Long bookingId) {
-        return ResponseEntity.ok(transactionService.getTransactionsByBooking(bookingId));
+    public ResponseEntity<List<TransactionResponseDTO>> getTransactionsByBooking(@PathVariable Long bookingId,
+                                                                                   Authentication authentication) {
+        return ResponseEntity.ok(transactionService.getTransactionsByBooking(bookingId, authentication.getName()));
     }
 }

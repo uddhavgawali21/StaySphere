@@ -14,6 +14,10 @@ import com.rms.dtos.PropertyResponseDTO;
 import com.rms.dtos.PropertyStatusUpdateDTO;
 import com.rms.dtos.UserAccountStatusUpdateDTO;
 import com.rms.dtos.UserResponseDTO;
+import com.rms.enums.AccountStatus;
+import com.rms.enums.BookingStatus;
+import com.rms.enums.PropertyStatus;
+import com.rms.enums.Role;
 import com.rms.service.AdminService;
 
 // Class-level @PreAuthorize applies to every method below, so no route here
@@ -27,8 +31,11 @@ public class AdminController {
     private final AdminService adminService;
 
     @GetMapping("/users")
-    public ResponseEntity<Page<UserResponseDTO>> getAllUsers(@PageableDefault(size = 20) Pageable pageable) {
-        return ResponseEntity.ok(adminService.getAllUsers(pageable));
+    public ResponseEntity<Page<UserResponseDTO>> getAllUsers(
+            @RequestParam(required = false) Role role,
+            @RequestParam(required = false) AccountStatus accountStatus,
+            @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(adminService.getAllUsers(role, accountStatus, pageable));
     }
 
     @PutMapping("/users/{userId}/status")
@@ -38,8 +45,11 @@ public class AdminController {
     }
 
     @GetMapping("/properties")
-    public ResponseEntity<Page<PropertyResponseDTO>> getAllProperties(@PageableDefault(size = 20) Pageable pageable) {
-        return ResponseEntity.ok(adminService.getAllProperties(pageable));
+    public ResponseEntity<Page<PropertyResponseDTO>> getAllProperties(
+            @RequestParam(required = false) String city,
+            @RequestParam(required = false) PropertyStatus propertyStatus,
+            @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(adminService.getAllProperties(city, propertyStatus, pageable));
     }
 
     @PutMapping("/properties/{propertyId}/status")
@@ -49,7 +59,9 @@ public class AdminController {
     }
 
     @GetMapping("/bookings")
-    public ResponseEntity<Page<BookingResponseDTO>> getAllBookings(@PageableDefault(size = 20) Pageable pageable) {
-        return ResponseEntity.ok(adminService.getAllBookings(pageable));
+    public ResponseEntity<Page<BookingResponseDTO>> getAllBookings(
+            @RequestParam(required = false) BookingStatus bookingStatus,
+            @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(adminService.getAllBookings(bookingStatus, pageable));
     }
 }

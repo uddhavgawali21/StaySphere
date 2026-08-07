@@ -31,6 +31,10 @@ public class BookingServiceImpl implements BookingService {
     private final PropertyRepository propertyRepository;
     private final UserRepository userRepository;
 
+    // Statuses that hold a property against new bookings for the dates they cover.
+    private static final List<BookingStatus> ACTIVE_BOOKING_STATUSES =
+            List.of(BookingStatus.REQUESTED, BookingStatus.PAYMENT_PENDING, BookingStatus.CONFIRMED);
+
     @Override
     @Transactional
     public BookingResponseDTO createBooking(String tenantEmail, BookingCreateDTO dto) {
@@ -44,26 +48,39 @@ public class BookingServiceImpl implements BookingService {
             throw new InvalidBookingStateException("Property is not available for booking");
         }
 
+        List<Booking> overlapping = bookingRepository.findOverlappingBookings(
+                dto.getPropertyId(), dto.getStartDate(), dto.getEndDate(), ACTIVE_BOOKING_STATUSES);
+        if (!overlapping.isEmpty()) {
+            throw new InvalidBookingStateException("Property is already booked for the selected dates");
+        }
+
         Booking booking = new Booking();
         booking.setProperty(property);
         booking.setTenant(tenant);
         booking.setBookingStatus(BookingStatus.REQUESTED);
         booking.setRequestDate(LocalDateTime.now());
-        booking.setMoveInDate(dto.getMoveInDate());
+        booking.setStartDate(dto.getStartDate());
+        booking.setEndDate(dto.getEndDate());
 
         Booking saved = bookingRepository.save(booking);
         return mapToResponseDTO(saved);
     }
 
     @Override
-    public BookingResponseDTO getBookingById(Long bookingId) {
+    public BookingResponseDTO getBookingById(Long bookingId, String requesterEmail) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + bookingId));
+        validateBookingAccess(booking, requesterEmail);
         return mapToResponseDTO(booking);
     }
 
     @Override
-    public List<BookingResponseDTO> getBookingsByTenant(Long tenantId) {
+    public List<BookingResponseDTO> getBookingsByTenant(Long tenantId, String requesterEmail) {
+        User requester = userRepository.findByEmail(requesterEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + requesterEmail));
+        if (!requester.getUserId().equals(tenantId)) {
+            throw new UnauthorizedActionException("You are not authorized to view these bookings");
+        }
         return bookingRepository.findAllByTenant_UserId(tenantId)
                 .stream()
                 .map(this::mapToResponseDTO)
@@ -71,7 +88,10 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public List<BookingResponseDTO> getBookingsByProperty(Long propertyId) {
+    public List<BookingResponseDTO> getBookingsByProperty(Long propertyId, String requesterEmail) {
+        Property property = propertyRepository.findById(propertyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Property not found with id: " + propertyId));
+        validatePropertyOwnership(property, requesterEmail);
         return bookingRepository.findAllByProperty_PropertyId(propertyId)
                 .stream()
                 .map(this::mapToResponseDTO)
@@ -87,7 +107,9 @@ public class BookingServiceImpl implements BookingService {
         validatePropertyOwnership(booking.getProperty(), ownerEmail);
         validatePendingState(booking);
 
-        booking.setBookingStatus(BookingStatus.CONFIRMED);
+        // Owner approval unlocks payment — it must NOT confirm the booking outright.
+        // CONFIRMED is set only by TransactionServiceImpl.verifyPayment() on payment success.
+        booking.setBookingStatus(BookingStatus.PAYMENT_PENDING);
         Booking updated = bookingRepository.save(booking);
         return mapToResponseDTO(updated);
     }
@@ -128,6 +150,15 @@ public class BookingServiceImpl implements BookingService {
         }
     }
 
+    // Only the tenant on the booking, or the owner of the booked property, may view it.
+    private void validateBookingAccess(Booking booking, String requesterEmail) {
+        boolean isTenant = booking.getTenant().getEmail().equalsIgnoreCase(requesterEmail);
+        boolean isOwner = booking.getProperty().getOwner().getEmail().equalsIgnoreCase(requesterEmail);
+        if (!isTenant && !isOwner) {
+            throw new UnauthorizedActionException("You are not authorized to view this booking");
+        }
+    }
+
     private void validatePendingState(Booking booking) {
         if (booking.getBookingStatus() != BookingStatus.REQUESTED
                 && booking.getBookingStatus() != BookingStatus.PAYMENT_PENDING) {
@@ -142,7 +173,8 @@ public class BookingServiceImpl implements BookingService {
                 .tenantId(booking.getTenant().getUserId())
                 .bookingStatus(booking.getBookingStatus())
                 .requestDate(booking.getRequestDate())
-                .moveInDate(booking.getMoveInDate())
+                .startDate(booking.getStartDate())
+                .endDate(booking.getEndDate())
                 .createdAt(booking.getCreatedAt())
                 .updatedAt(booking.getUpdatedAt())
                 .build();

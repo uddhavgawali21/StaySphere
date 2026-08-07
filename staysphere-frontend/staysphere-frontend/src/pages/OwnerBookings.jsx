@@ -71,12 +71,12 @@ export default function OwnerBookings() {
 
         <div className="booking-list">
           {bookings.map((booking) => {
-            const actionable = ['REQUESTED', 'PAYMENT_PENDING'].includes(booking.bookingStatus)
+            const actionable = booking.bookingStatus === 'REQUESTED'
             return (
               <div key={booking.bookingId} className="booking-row">
                 <div>
                   <p className="booking-meta">{propertyTitles[booking.propertyId] || `Property #${booking.propertyId}`}</p>
-                  <p className="booking-meta">Move-in: {booking.moveInDate} · Tenant #{booking.tenantId}</p>
+                  <p className="booking-meta">Stay: {booking.startDate} → {booking.endDate} · Tenant #{booking.tenantId}</p>
                 </div>
                 <div className="booking-actions">
                   <StatusBadge status={booking.bookingStatus} />

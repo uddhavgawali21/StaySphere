@@ -11,10 +11,14 @@ public class PaymentServiceConfig {
     @Value("${payment.service.base-url}")
     private String paymentServiceBaseUrl;
 
+    @Value("${payment.service.internal-api-key}")
+    private String internalApiKey;
+
     @Bean
     public RestClient paymentServiceRestClient() {
         return RestClient.builder()
                 .baseUrl(paymentServiceBaseUrl)
+                .defaultHeader("X-Internal-Api-Key", internalApiKey)
                 .build();
     }
 }

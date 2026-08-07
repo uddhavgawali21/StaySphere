@@ -9,13 +9,17 @@ import org.springframework.transaction.annotation.Transactional;
 import com.rms.dtos.PropertyCreateDTO;
 import com.rms.dtos.PropertyResponseDTO;
 import com.rms.dtos.PropertyUpdateDTO;
+import com.rms.entity.Booking;
 import com.rms.entity.Property;
 import com.rms.entity.User;
+import com.rms.enums.BookingStatus;
 import com.rms.enums.OccupancyType;
 import com.rms.enums.PropertyStatus;
 import com.rms.enums.PropertyType;
+import com.rms.exceptions.InvalidBookingStateException;
 import com.rms.exceptions.ResourceNotFoundException;
 import com.rms.exceptions.UnauthorizedActionException;
+import com.rms.repository.BookingRepository;
 import com.rms.repository.PropertyRepository;
 import com.rms.repository.UserRepository;
 import com.rms.service.PropertyService;
@@ -31,6 +35,7 @@ public class PropertyServiceImpl implements PropertyService {
 
 	private final PropertyRepository propertyRepository;
 	private final UserRepository userRepository;
+	private final BookingRepository bookingRepository;
 
 	@Override
 	@Transactional
@@ -101,6 +106,16 @@ public class PropertyServiceImpl implements PropertyService {
 				.orElseThrow(() -> new ResourceNotFoundException("Property not found with id: " + propertyId));
 
 		validateOwnership(property, requesterEmail);
+
+		List<Booking> activeBookings = bookingRepository.findAllByProperty_PropertyId(propertyId).stream()
+				.filter(b -> b.getBookingStatus() != BookingStatus.REJECTED
+						&& b.getBookingStatus() != BookingStatus.CANCELLED)
+				.toList();
+		if (!activeBookings.isEmpty()) {
+			throw new InvalidBookingStateException(
+					"Cannot delete property with active bookings; reject/cancel them first or mark the property INACTIVE");
+		}
+
 		propertyRepository.delete(property);
 	}
 

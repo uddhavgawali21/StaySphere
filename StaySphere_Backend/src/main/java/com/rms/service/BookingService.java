@@ -7,9 +7,9 @@ import java.util.List;
 
 public interface BookingService {
     BookingResponseDTO createBooking(String tenantEmail, BookingCreateDTO dto);
-    BookingResponseDTO getBookingById(Long bookingId);
-    List<BookingResponseDTO> getBookingsByTenant(Long tenantId);
-    List<BookingResponseDTO> getBookingsByProperty(Long propertyId);
+    BookingResponseDTO getBookingById(Long bookingId, String requesterEmail);
+    List<BookingResponseDTO> getBookingsByTenant(Long tenantId, String requesterEmail);
+    List<BookingResponseDTO> getBookingsByProperty(Long propertyId, String requesterEmail);
     BookingResponseDTO confirmBooking(Long bookingId, String ownerEmail);
     BookingResponseDTO rejectBooking(Long bookingId, String ownerEmail);
     BookingResponseDTO cancelBooking(Long bookingId, String tenantEmail);

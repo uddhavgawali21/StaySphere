@@ -80,7 +80,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleGeneric(Exception ex) {
         String correlationId = UUID.randomUUID().toString();
         log.error("Unhandled exception [{}]: {}", correlationId, ex.getMessage(), ex);
-        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Something went wrong: " + ex.getMessage(), correlationId);
+        // Never echo ex.getMessage() back to the client here — it can carry SQL,
+        // stack-trace, or other internal detail. The correlationId is what lets
+        // an operator find the real message in the logs.
+        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR,
+                "Something went wrong. Please try again or contact support.", correlationId);
     }
 
     private ResponseEntity<Map<String, Object>> buildResponse(HttpStatus status, String message, String correlationId) {

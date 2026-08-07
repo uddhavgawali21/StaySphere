@@ -1,12 +1,9 @@
 import { apiClient } from './client'
 
-// NOTE: the backend's /properties/search currently ignores query params and
-// just returns all ACTIVE properties (same as GET /properties) — no server-side
-// filtering or pagination. Filtering/pagination is done client-side in Home.jsx
-// until that endpoint is restored to take real filters. Swap this back to
-// passing { params } once it does.
-export const searchProperties = () =>
-  apiClient.get('/properties/search').then((r) => r.data)
+// Backend supports real server-side filtering + pagination (city, propertyType,
+// occupancyType, minRent, maxRent, page, size) via PropertySpecification.
+export const searchProperties = (params = {}) =>
+  apiClient.get('/properties/search', { params }).then((r) => r.data)
 
 export const getProperty = (propertyId) =>
   apiClient.get(`/properties/${propertyId}`).then((r) => r.data)

@@ -18,7 +18,8 @@ public class BookingResponseDTO {
     private Long tenantId;
     private BookingStatus bookingStatus;
     private LocalDateTime requestDate;
-    private LocalDate moveInDate;
+    private LocalDate startDate;
+    private LocalDate endDate;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

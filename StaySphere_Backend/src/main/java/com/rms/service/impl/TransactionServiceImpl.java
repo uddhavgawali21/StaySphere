@@ -25,6 +25,7 @@ import com.rms.repository.BookingRepository;
 import com.rms.repository.TransactionRepository;
 import com.rms.service.TransactionService;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -50,6 +51,15 @@ public class TransactionServiceImpl implements TransactionService {
         if (booking.getBookingStatus() != BookingStatus.REQUESTED
                 && booking.getBookingStatus() != BookingStatus.PAYMENT_PENDING) {
             throw new InvalidBookingStateException("Booking is not eligible for payment: " + booking.getBookingStatus());
+        }
+
+        // Never trust the client-supplied amount — price it server-side from the
+        // property's rent, or a tenant could pay an arbitrary amount and still
+        // get the booking confirmed.
+        BigDecimal expectedAmount = booking.getProperty().getRentAmount();
+        if (dto.getAmount().compareTo(expectedAmount) != 0) {
+            throw new InvalidBookingStateException(
+                    "Payment amount does not match the property's rent amount: " + expectedAmount);
         }
 
         if (transactionRepository.existsByTransactionRef(dto.getTransactionRef())) {
@@ -103,6 +113,15 @@ public class TransactionServiceImpl implements TransactionService {
             throw new InvalidBookingStateException("Transaction is not in a modifiable state: " + transaction.getPaymentStatus());
         }
 
+        // The booking may have been cancelled (or otherwise moved on) after this
+        // transaction was created but before Razorpay Checkout completed — e.g. the
+        // tenant cancelled in another tab while this payment window stayed open.
+        // Don't let a late success response resurrect it.
+        if (booking.getBookingStatus() != BookingStatus.PAYMENT_PENDING) {
+            throw new InvalidBookingStateException(
+                    "Booking is no longer awaiting payment (current status: " + booking.getBookingStatus() + ")");
+        }
+
         PaymentServiceResponseDTO paymentResponse = paymentServiceClient.verifyPayment(
                 transaction.getTransactionRef(),
                 dto.getRazorpayOrderId(),
@@ -127,18 +146,32 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public TransactionResponseDTO getTransactionById(Long transactionId) {
+    public TransactionResponseDTO getTransactionById(Long transactionId, String requesterEmail) {
         Transaction transaction = transactionRepository.findById(transactionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Transaction not found with id: " + transactionId));
+        validateTransactionAccess(transaction.getBooking(), requesterEmail);
         return mapToResponseDTO(transaction);
     }
 
     @Override
-    public List<TransactionResponseDTO> getTransactionsByBooking(Long bookingId) {
+    public List<TransactionResponseDTO> getTransactionsByBooking(Long bookingId, String requesterEmail) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + bookingId));
+        validateTransactionAccess(booking, requesterEmail);
         return transactionRepository.findAllByBooking_BookingId(bookingId)
                 .stream()
                 .map(this::mapToResponseDTO)
                 .collect(Collectors.toList());
+    }
+
+    // Only the tenant who made the booking, or the owner of the booked property,
+    // may view its payment records.
+    private void validateTransactionAccess(Booking booking, String requesterEmail) {
+        boolean isTenant = booking.getTenant().getEmail().equalsIgnoreCase(requesterEmail);
+        boolean isOwner = booking.getProperty().getOwner().getEmail().equalsIgnoreCase(requesterEmail);
+        if (!isTenant && !isOwner) {
+            throw new UnauthorizedActionException("You are not authorized to view this transaction");
+        }
     }
 
     private TransactionResponseDTO mapToResponseDTO(Transaction transaction) {

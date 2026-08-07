@@ -18,7 +18,8 @@ export default function PropertyDetails() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  const [moveInDate, setMoveInDate] = useState('')
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
   const [bookingError, setBookingError] = useState('')
   const [bookingSuccess, setBookingSuccess] = useState('')
   const [booking, setBooking] = useState(false)
@@ -60,7 +61,7 @@ export default function PropertyDetails() {
 
     setBooking(true)
     try {
-      const result = await createBooking({ propertyId: Number(propertyId), moveInDate })
+      const result = await createBooking({ propertyId: Number(propertyId), startDate, endDate: endDate || null })
       setBookingSuccess(`Booking requested — status: ${result.bookingStatus}. Track it under "My bookings".`)
     } catch (err) {
       setBookingError(apiErrorMessage(err, 'Could not create the booking.'))
@@ -124,13 +125,33 @@ export default function PropertyDetails() {
               </div>
             )}
             <div className="field">
-              <label>Move-in date</label>
+              <label>Start date</label>
               <input
                 type="date"
                 required
-                value={moveInDate}
+                value={startDate}
                 min={new Date(Date.now() + 86400000).toISOString().slice(0, 10)}
-                onChange={(e) => setMoveInDate(e.target.value)}
+                onChange={(e) => {
+                  setStartDate(e.target.value)
+                  // Keep end date valid if it's now before the new start date
+                  if (endDate && endDate <= e.target.value) {
+                    setEndDate('')
+                  }
+                }}
+              />
+            </div>
+            <div className="field">
+              <label>End date <span className="deposit-line" style={{ display: 'inline' }}>(optional)</span></label>
+              <input
+                type="date"
+                value={endDate}
+                disabled={!startDate}
+                min={
+                  startDate
+                    ? new Date(new Date(startDate).getTime() + 86400000).toISOString().slice(0, 10)
+                    : undefined
+                }
+                onChange={(e) => setEndDate(e.target.value)}
               />
             </div>
             <button className="btn btn-primary" type="submit" disabled={booking} style={{ width: '100%' }}>

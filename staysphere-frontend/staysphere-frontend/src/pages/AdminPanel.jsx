@@ -199,7 +199,7 @@ function BookingsTab() {
 
       <table className="admin-table">
         <thead>
-          <tr><th>Booking</th><th>Property</th><th>Tenant</th><th>Move-in</th><th>Status</th></tr>
+          <tr><th>Booking</th><th>Property</th><th>Tenant</th><th>Start</th><th>End</th><th>Status</th></tr>
         </thead>
         <tbody>
           {data.content.map((b) => (
@@ -207,7 +207,8 @@ function BookingsTab() {
               <td>#{b.bookingId}</td>
               <td>#{b.propertyId}</td>
               <td>#{b.tenantId}</td>
-              <td>{b.moveInDate}</td>
+              <td>{b.startDate}</td>
+              <td>{b.endDate}</td>
               <td><StatusBadge status={b.bookingStatus} /></td>
             </tr>
           ))}
