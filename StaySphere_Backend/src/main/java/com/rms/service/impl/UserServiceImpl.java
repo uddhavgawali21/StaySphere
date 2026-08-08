@@ -19,6 +19,7 @@ import com.rms.exceptions.UnauthorizedActionException;
 import com.rms.enums.Role;
 import com.rms.repository.UserRepository;
 import com.rms.security.JwtUtil;
+import com.rms.service.AuditLogService;
 import com.rms.service.UserService;
 
 @Service
@@ -28,6 +29,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final AuditLogService auditLogService;
 
     @Override
     @Transactional
@@ -72,18 +74,23 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public AuthResponseDTO login(UserLoginDTO dto) {
-        User user = userRepository.findByEmail(dto.getEmail())
-                .orElseThrow(() -> new InvalidCredentialsException("Invalid email or password"));
+        User user = userRepository.findByEmail(dto.getEmail()).orElse(null);
 
-        if (!passwordEncoder.matches(dto.getPassword(), user.getPassword())) {
+        if (user == null || !passwordEncoder.matches(dto.getPassword(), user.getPassword())) {
+            auditLogService.record(dto.getEmail(), null, "LOGIN_FAILED", "USER",
+                    user != null ? user.getUserId() : null, "Invalid email or password");
             throw new InvalidCredentialsException("Invalid email or password");
         }
 
         if (user.getAccountStatus() != AccountStatus.ACTIVE) {
+            auditLogService.record(user.getEmail(), user.getRole().name(), "LOGIN_FAILED", "USER",
+                    user.getUserId(), "Account status: " + user.getAccountStatus());
             throw new InvalidCredentialsException("Account is not active");
         }
 
         String token = jwtUtil.generateToken(user);
+
+        auditLogService.record(user.getEmail(), user.getRole().name(), "LOGIN_SUCCESS", "USER", user.getUserId(), null);
 
         return AuthResponseDTO.builder()
                 .token(token)

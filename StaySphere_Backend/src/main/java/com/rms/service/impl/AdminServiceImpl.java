@@ -5,9 +5,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.rms.dtos.AdminPasswordResetDTO;
+import com.rms.dtos.AuditLogResponseDTO;
 import com.rms.dtos.BookingResponseDTO;
 import com.rms.dtos.PropertyResponseDTO;
 import com.rms.dtos.PropertyStatusUpdateDTO;
@@ -25,6 +28,7 @@ import com.rms.repository.BookingRepository;
 import com.rms.repository.PropertyRepository;
 import com.rms.repository.UserRepository;
 import com.rms.service.AdminService;
+import com.rms.service.AuditLogService;
 import com.rms.util.BookingSpecification;
 import com.rms.util.UserSpecification;
 
@@ -35,6 +39,8 @@ public class AdminServiceImpl implements AdminService {
     private final UserRepository userRepository;
     private final PropertyRepository propertyRepository;
     private final BookingRepository bookingRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final AuditLogService auditLogService;
 
     @Override
     public Page<UserResponseDTO> getAllUsers(Role role, AccountStatus accountStatus, Pageable pageable) {
@@ -44,13 +50,37 @@ public class AdminServiceImpl implements AdminService {
 
     @Override
     @Transactional
-    public UserResponseDTO updateUserStatus(Long userId, UserAccountStatusUpdateDTO dto) {
+    public UserResponseDTO updateUserStatus(Long userId, UserAccountStatusUpdateDTO dto, String adminEmail) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
 
+        AccountStatus previousStatus = user.getAccountStatus();
         user.setAccountStatus(dto.getAccountStatus());
         User updated = userRepository.save(user);
+
+        auditLogService.record(adminEmail, Role.ADMIN.name(), "USER_STATUS_UPDATED", "USER", userId,
+                previousStatus + " -> " + dto.getAccountStatus());
+
         return mapToUserResponseDTO(updated);
+    }
+
+    @Override
+    @Transactional
+    public void resetUserPassword(Long userId, AdminPasswordResetDTO dto, String adminEmail) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+
+        user.setPassword(passwordEncoder.encode(dto.getNewPassword()));
+        userRepository.save(user);
+
+        // Never put the new password itself in the audit trail.
+        auditLogService.record(adminEmail, Role.ADMIN.name(), "PASSWORD_RESET_BY_ADMIN", "USER", userId,
+                "Password reset for " + user.getEmail());
+    }
+
+    @Override
+    public Page<AuditLogResponseDTO> getAuditLogs(Pageable pageable) {
+        return auditLogService.getAuditLogs(pageable);
     }
 
     @Override

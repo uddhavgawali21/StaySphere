@@ -7,6 +7,7 @@
   align-items: center;
   gap: 32px;
   height: 68px;
+  position: relative;
 }
 .brand {
   display: flex;
@@ -21,6 +22,14 @@
   color: var(--brass);
   font-size: 1.1rem;
 }
+
+.nav-menu {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  flex: 1;
+}
+
 .nav-links {
   display: flex;
   gap: 24px;
@@ -49,6 +58,68 @@
 }
 .nav-auth .btn-outline:hover { border-color: var(--dawn); }
 
+/* Hamburger toggle — hidden on desktop, shown only under the breakpoint below */
+.nav-toggle {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 32px;
+  height: 32px;
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+.nav-toggle span {
+  display: block;
+  height: 2px;
+  width: 100%;
+  background: var(--dawn);
+  border-radius: 2px;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+.nav-toggle[aria-expanded="true"] span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.nav-toggle[aria-expanded="true"] span:nth-child(2) { opacity: 0; }
+.nav-toggle[aria-expanded="true"] span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
 @media (max-width: 720px) {
-  .nav-links { display: none; }
+  .nav-toggle { display: flex; }
+
+  /* Every menu item (Dashboard, Requests, etc.) stays reachable on mobile —
+     it moves into a dropdown panel instead of being hidden outright. */
+  .nav-menu {
+    display: none;
+    position: absolute;
+    top: 68px;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    background: var(--ink);
+    border-bottom: 3px solid var(--brass);
+    padding: 8px 24px 20px;
+    z-index: 20;
+  }
+  .nav-menu.nav-menu-open { display: flex; }
+
+  .nav-links {
+    flex-direction: column;
+    gap: 4px;
+  }
+  .nav-links a {
+    padding: 10px 0;
+    border-bottom: 1px solid #2A3352;
+  }
+
+  .nav-auth {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    margin-top: 12px;
+  }
+  .nav-auth .btn { width: 100%; }
+  .nav-user { padding: 4px 0; }
 }

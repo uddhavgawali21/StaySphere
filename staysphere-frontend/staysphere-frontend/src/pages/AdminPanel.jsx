@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react'
 import {
-  getAdminUsers, updateUserStatus,
+  getAdminUsers, updateUserStatus, resetUserPassword,
   getAdminProperties, updateAdminPropertyStatus,
-  getAdminBookings
+  getAdminBookings, getAuditLogs
 } from '../api/dashboard'
 import StatusBadge from '../components/StatusBadge.jsx'
 import './AdminPanel.css'
 
-const TABS = ['Users', 'Properties', 'Bookings']
+const TABS = ['Users', 'Properties', 'Bookings', 'Audit Log']
 
 export default function AdminPanel() {
   const [tab, setTab] = useState('Users')
@@ -31,6 +31,7 @@ export default function AdminPanel() {
         {tab === 'Users' && <UsersTab />}
         {tab === 'Properties' && <PropertiesTab />}
         {tab === 'Bookings' && <BookingsTab />}
+        {tab === 'Audit Log' && <AuditLogTab />}
       </div>
     </div>
   )
@@ -40,6 +41,7 @@ function UsersTab() {
   const [filters, setFilters] = useState({ role: '', accountStatus: '' })
   const [data, setData] = useState({ content: [] })
   const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
 
   useEffect(() => { load() }, [filters])
 
@@ -54,6 +56,25 @@ function UsersTab() {
       load()
     } catch {
       setError('Could not update that user.')
+    }
+  }
+
+  // Passwords are hashed one-way — this sets a new one for a locked-out
+  // user, it does not (and cannot) reveal their existing password.
+  async function handleResetPassword(user) {
+    const newPassword = window.prompt(`Set a new password for ${user.email} (min 8 characters):`)
+    if (!newPassword) return
+    if (newPassword.length < 8) {
+      setError('New password must be at least 8 characters.')
+      return
+    }
+    setError('')
+    setNotice('')
+    try {
+      await resetUserPassword(user.userId, newPassword)
+      setNotice(`Password reset for ${user.email}. Share the new password with them securely.`)
+    } catch {
+      setError('Could not reset that user\'s password.')
     }
   }
 
@@ -74,10 +95,11 @@ function UsersTab() {
         </select>
       </div>
       {error && <div className="banner-error">{error}</div>}
+      {notice && <div className="banner-success">{notice}</div>}
 
       <table className="admin-table">
         <thead>
-          <tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th></th></tr>
+          <tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th></th><th></th></tr>
         </thead>
         <tbody>
           {data.content.map((u) => (
@@ -96,6 +118,11 @@ function UsersTab() {
                   <option value="SUSPENDED">Suspended</option>
                   <option value="DEACTIVATED">Deactivated</option>
                 </select>
+              </td>
+              <td>
+                <button className="btn btn-brass btn-sm" onClick={() => handleResetPassword(u)}>
+                  Reset password
+                </button>
               </td>
             </tr>
           ))}
@@ -215,6 +242,39 @@ function BookingsTab() {
         </tbody>
       </table>
       {data.content.length === 0 && <p className="booking-meta" style={{ padding: '16px 0' }}>No bookings match that filter.</p>}
+    </div>
+  )
+}
+
+function AuditLogTab() {
+  const [data, setData] = useState({ content: [] })
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    getAuditLogs({}).then(setData).catch(() => setError('Could not load the audit log.'))
+  }, [])
+
+  return (
+    <div>
+      {error && <div className="banner-error">{error}</div>}
+
+      <table className="admin-table">
+        <thead>
+          <tr><th>When</th><th>Actor</th><th>Action</th><th>Target</th><th>Details</th></tr>
+        </thead>
+        <tbody>
+          {data.content.map((log) => (
+            <tr key={log.auditId}>
+              <td>{log.createdAt}</td>
+              <td>{log.actorEmail}{log.actorRole ? ` (${log.actorRole})` : ''}</td>
+              <td>{log.action}</td>
+              <td>{log.targetType ? `${log.targetType} #${log.targetId}` : '—'}</td>
+              <td>{log.details || '—'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {data.content.length === 0 && <p className="booking-meta" style={{ padding: '16px 0' }}>No audit entries yet.</p>}
     </div>
   )
 }

@@ -80,6 +80,15 @@ public class PaymentServiceImpl implements PaymentService {
         Payment payment = paymentRepository.findById(dto.getPaymentId())
                 .orElseThrow(() -> new PaymentNotFoundException("Payment not found with id: " + dto.getPaymentId()));
 
+        // A duplicate/retried /verify call (network retry, double-submit, or a
+        // webhook that already settled this payment) must not reprocess a
+        // terminal payment — that would overwrite paymentDate or, worse, flip
+        // an already-FAILED payment back to SUCCESS on a stale replay.
+        if (payment.getPaymentStatus() != PaymentStatus.PENDING) {
+            log.info("Ignoring duplicate verify call for payment {} — already {}", payment.getPaymentId(), payment.getPaymentStatus());
+            return mapToResponseDTO(payment);
+        }
+
         if (!payment.getRazorpayOrderId().equals(dto.getRazorpayOrderId())) {
             throw new RazorpayException("Razorpay order id does not match this payment");
         }
