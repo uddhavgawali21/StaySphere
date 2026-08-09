@@ -14,9 +14,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
@@ -45,10 +45,16 @@ public class PaymentController {
     @PostMapping("/webhook")
     public ResponseEntity<Void> webhook(HttpServletRequest request,
                                          @RequestHeader(value = "X-Razorpay-Signature", required = false) String signature) throws Exception {
-        String rawBody;
-        try (BufferedReader reader = request.getReader()) {
-            rawBody = reader.lines().collect(Collectors.joining(System.lineSeparator()));
+        // Read the exact raw bytes Razorpay sent — the HMAC is computed over the
+        // literal request body, so reconstructing it via BufferedReader.lines()
+        // (which drops the original line terminators and rejoins with the
+        // platform default) would silently break signature verification for
+        // any payload containing embedded newlines.
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        try (var inputStream = request.getInputStream()) {
+            inputStream.transferTo(buffer);
         }
+        String rawBody = buffer.toString(StandardCharsets.UTF_8);
         paymentService.handleWebhook(rawBody, signature);
         return ResponseEntity.ok().build();
     }

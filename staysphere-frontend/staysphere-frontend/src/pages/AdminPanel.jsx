@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react'
 import {
-  getAdminUsers, updateUserStatus,
+  getAdminUsers, updateUserStatus, resetUserPassword,
   getAdminProperties, updateAdminPropertyStatus,
-  getAdminBookings
+  getAdminBookings, getAuditLogs
 } from '../api/dashboard'
 import StatusBadge from '../components/StatusBadge.jsx'
 import './AdminPanel.css'
 
-const TABS = ['Users', 'Properties', 'Bookings']
+const TABS = ['Users', 'Properties', 'Bookings', 'Audit Log']
 
 export default function AdminPanel() {
   const [tab, setTab] = useState('Users')
@@ -31,6 +31,7 @@ export default function AdminPanel() {
         {tab === 'Users' && <UsersTab />}
         {tab === 'Properties' && <PropertiesTab />}
         {tab === 'Bookings' && <BookingsTab />}
+        {tab === 'Audit Log' && <AuditLogTab />}
       </div>
     </div>
   )
@@ -40,6 +41,7 @@ function UsersTab() {
   const [filters, setFilters] = useState({ role: '', accountStatus: '' })
   const [data, setData] = useState({ content: [] })
   const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
 
   useEffect(() => { load() }, [filters])
 
@@ -54,6 +56,20 @@ function UsersTab() {
       load()
     } catch {
       setError('Could not update that user.')
+    }
+  }
+
+  async function handleResetPassword(user) {
+    const newPassword = window.prompt(`Set a new password for ${user.email} (min 8 characters):`)
+    if (!newPassword) return
+    if (newPassword.length < 8) { setError('New password must be at least 8 characters.'); return }
+    setError('')
+    setNotice('')
+    try {
+      await resetUserPassword(user.userId, newPassword)
+      setNotice(`Password reset for ${user.email}. Share the new password with them securely.`)
+    } catch {
+      setError("Could not reset that user's password.")
     }
   }
 
@@ -74,16 +90,19 @@ function UsersTab() {
         </select>
       </div>
       {error && <div className="banner-error">{error}</div>}
+      {/* FIX: use banner-success class, not banner-error with inline override */}
+      {notice && <div className="banner-success">{notice}</div>}
 
       <table className="admin-table">
         <thead>
-          <tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th></th></tr>
+          <tr><th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th>Status</th><th></th><th></th></tr>
         </thead>
         <tbody>
           {data.content.map((u) => (
             <tr key={u.userId}>
               <td>{u.firstName} {u.lastName}</td>
               <td>{u.email}</td>
+              <td>{u.phone}</td>
               <td>{u.role}</td>
               <td><StatusBadge status={u.accountStatus} /></td>
               <td>
@@ -96,6 +115,11 @@ function UsersTab() {
                   <option value="SUSPENDED">Suspended</option>
                   <option value="DEACTIVATED">Deactivated</option>
                 </select>
+              </td>
+              <td>
+                <button className="btn btn-brass btn-sm" onClick={() => handleResetPassword(u)}>
+                  Reset password
+                </button>
               </td>
             </tr>
           ))}
@@ -145,7 +169,7 @@ function PropertiesTab() {
 
       <table className="admin-table">
         <thead>
-          <tr><th>Title</th><th>City</th><th>Rent</th><th>Status</th><th></th></tr>
+          <tr><th>Title</th><th>City</th><th>Rent</th><th>Rooms</th><th>Status</th><th></th></tr>
         </thead>
         <tbody>
           {data.content.map((p) => (
@@ -153,6 +177,8 @@ function PropertiesTab() {
               <td>{p.title}</td>
               <td>{p.city}</td>
               <td>₹{Number(p.rentAmount).toLocaleString('en-IN')}</td>
+              {/* FIX: show rooms available so admin can see occupancy */}
+              <td>{p.availableRooms}/{p.totalRooms} available</td>
               <td><StatusBadge status={p.propertyStatus} /></td>
               <td>
                 <select
@@ -199,21 +225,77 @@ function BookingsTab() {
 
       <table className="admin-table">
         <thead>
-          <tr><th>Booking</th><th>Property</th><th>Tenant</th><th>Move-in</th><th>Status</th></tr>
+          {/* FIX: show meaningful columns — property title, tenant name/email, amount */}
+          <tr>
+            <th>#</th>
+            <th>Property</th>
+            <th>Tenant</th>
+            <th>Contact</th>
+            <th>Dates</th>
+            <th>Amount</th>
+            <th>Status</th>
+          </tr>
         </thead>
         <tbody>
           {data.content.map((b) => (
             <tr key={b.bookingId}>
               <td>#{b.bookingId}</td>
-              <td>#{b.propertyId}</td>
-              <td>#{b.tenantId}</td>
-              <td>{b.moveInDate}</td>
+              {/* FIX: show propertyTitle instead of raw propertyId */}
+              <td>{b.propertyTitle || `#${b.propertyId}`}</td>
+              {/* FIX: show tenantName instead of raw tenantId */}
+              <td>{b.tenantName || `#${b.tenantId}`}</td>
+              {/* FIX: show tenant contact so admin can resolve disputes */}
+              <td>
+                {b.tenantEmail && (
+                  <a href={`mailto:${b.tenantEmail}`} style={{ color: 'var(--brass)', fontSize: '0.82rem' }}>
+                    {b.tenantEmail}
+                  </a>
+                )}
+                {b.tenantPhone && <span style={{ display: 'block', fontSize: '0.82rem' }}>{b.tenantPhone}</span>}
+              </td>
+              <td>{b.startDate}{b.endDate ? ` → ${b.endDate}` : ''}</td>
+              {/* FIX: show totalAmount */}
+              <td>{b.totalAmount ? `₹${Number(b.totalAmount).toLocaleString('en-IN')}` : '—'}</td>
               <td><StatusBadge status={b.bookingStatus} /></td>
             </tr>
           ))}
         </tbody>
       </table>
       {data.content.length === 0 && <p className="booking-meta" style={{ padding: '16px 0' }}>No bookings match that filter.</p>}
+    </div>
+  )
+}
+
+function AuditLogTab() {
+  const [data, setData] = useState({ content: [] })
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    getAuditLogs({}).then(setData).catch(() => setError('Could not load the audit log.'))
+  }, [])
+
+  return (
+    <div>
+      {error && <div className="banner-error">{error}</div>}
+      <table className="admin-table">
+        <thead>
+          <tr><th>When</th><th>Actor</th><th>Action</th><th>Target</th><th>Details</th></tr>
+        </thead>
+        <tbody>
+          {data.content.map((log) => (
+            <tr key={log.auditId}>
+              <td style={{ whiteSpace: 'nowrap', fontSize: '0.8rem' }}>
+                {new Date(log.createdAt).toLocaleString('en-IN')}
+              </td>
+              <td>{log.actorEmail}{log.actorRole ? ` (${log.actorRole})` : ''}</td>
+              <td>{log.action}</td>
+              <td>{log.targetType ? `${log.targetType} #${log.targetId}` : '—'}</td>
+              <td>{log.details || '—'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {data.content.length === 0 && <p className="booking-meta" style={{ padding: '16px 0' }}>No audit entries yet.</p>}
     </div>
   )
 }

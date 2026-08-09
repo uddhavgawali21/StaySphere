@@ -11,6 +11,7 @@ import OwnerDashboard from './pages/OwnerDashboard.jsx'
 import OwnerProperties from './pages/OwnerProperties.jsx'
 import OwnerPropertyManage from './pages/OwnerPropertyManage.jsx'
 import OwnerBookings from './pages/OwnerBookings.jsx'
+import OwnerPaymentAccount from './pages/OwnerPaymentAccount.jsx'
 import AdminPanel from './pages/AdminPanel.jsx'
 
 export default function App() {
@@ -62,6 +63,14 @@ export default function App() {
           element={
             <ProtectedRoute roles={['OWNER']}>
               <OwnerBookings />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/owner/payment-account"
+          element={
+            <ProtectedRoute roles={['OWNER']}>
+              <OwnerPaymentAccount />
             </ProtectedRoute>
           }
         />

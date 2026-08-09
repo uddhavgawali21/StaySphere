@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { searchProperties } from '../api/properties'
 import PropertyCard from '../components/PropertyCard.jsx'
 import './Home.css'
@@ -7,25 +7,30 @@ const emptyFilters = { city: '', propertyType: '', occupancyType: '', minRent: '
 const PAGE_SIZE = 9
 
 export default function Home() {
-  const [allProperties, setAllProperties] = useState([])
+  const [properties, setProperties] = useState([])
   const [filters, setFilters] = useState(emptyFilters)
   const [appliedFilters, setAppliedFilters] = useState(emptyFilters)
   const [page, setPage] = useState(0)
+  const [totalPages, setTotalPages] = useState(1)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   useEffect(() => {
     load()
-  }, [])
+  }, [page, appliedFilters])
 
   async function load() {
     setLoading(true)
     setError('')
     try {
-      // Backend currently returns every ACTIVE property with no server-side
-      // filtering — fetch once, then filter/paginate below on the client.
-      const data = await searchProperties()
-setAllProperties(data.content || [])
+      const params = {
+        page,
+        size: PAGE_SIZE,
+        ...Object.fromEntries(Object.entries(appliedFilters).filter(([, v]) => v))
+      }
+      const data = await searchProperties(params)
+      setProperties(data.content || [])
+      setTotalPages(data.totalPages || 1)
     } catch {
       setError('Could not load listings right now.')
     } finally {
@@ -39,23 +44,9 @@ setAllProperties(data.content || [])
 
   function handleSearchSubmit(e) {
     e.preventDefault()
-    setAppliedFilters(filters)
     setPage(0)
+    setAppliedFilters(filters)
   }
-
-  const filtered = useMemo(() => {
-    return allProperties.filter((p) => {
-      if (appliedFilters.city && !p.city?.toLowerCase().includes(appliedFilters.city.toLowerCase())) return false
-      if (appliedFilters.propertyType && p.propertyType !== appliedFilters.propertyType) return false
-      if (appliedFilters.occupancyType && p.occupancyType !== appliedFilters.occupancyType) return false
-      if (appliedFilters.minRent && Number(p.rentAmount) < Number(appliedFilters.minRent)) return false
-      if (appliedFilters.maxRent && Number(p.rentAmount) > Number(appliedFilters.maxRent)) return false
-      return true
-    })
-  }, [allProperties, appliedFilters])
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
-  const pageItems = filtered.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE)
 
   return (
     <div className="page">
@@ -109,17 +100,17 @@ setAllProperties(data.content || [])
         {loading && <div className="spinner-row">Loading listings…</div>}
         {error && <div className="banner-error">{error}</div>}
 
-        {!loading && !error && filtered.length === 0 && (
+        {!loading && !error && properties.length === 0 && (
           <div className="empty-state">
             <h3>No rooms match those filters</h3>
             <p>Try widening your budget or clearing a filter.</p>
           </div>
         )}
 
-        {!loading && filtered.length > 0 && (
+        {!loading && properties.length > 0 && (
           <>
             <div className="results-grid">
-              {pageItems.map((property) => (
+              {properties.map((property) => (
                 <PropertyCard key={property.propertyId} property={property} />
               ))}
             </div>

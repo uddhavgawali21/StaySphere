@@ -1,0 +1,26 @@
+.narrow { max-width: 520px; }
+
+.page-subtitle {
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  margin: 6px 0 20px;
+  line-height: 1.5;
+}
+
+.payment-account-form {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.form-divider {
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+  margin: 0;
+}

@@ -36,7 +36,9 @@ public interface PropertyService {
 
     void deleteProperty(Long propertyId,
                         String requesterEmail);
-    
-    PropertyResponseDTO updatePropertyStatus(Long propertyId, String requesterEmail, PropertyStatusUpdateDTO dto);
 
+    // NEW — owner activates/deactivates their property.
+    PropertyResponseDTO updatePropertyStatus(Long propertyId,
+                                              String requesterEmail,
+                                              PropertyStatusUpdateDTO dto);
 }

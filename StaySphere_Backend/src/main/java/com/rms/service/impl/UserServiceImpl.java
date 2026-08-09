@@ -15,8 +15,11 @@ import com.rms.enums.AccountStatus;
 import com.rms.exceptions.DuplicateResourceException;
 import com.rms.exceptions.InvalidCredentialsException;
 import com.rms.exceptions.ResourceNotFoundException;
+import com.rms.exceptions.UnauthorizedActionException;
+import com.rms.enums.Role;
 import com.rms.repository.UserRepository;
 import com.rms.security.JwtUtil;
+import com.rms.service.AuditLogService;
 import com.rms.service.UserService;
 
 @Service
@@ -26,6 +29,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final AuditLogService auditLogService;
 
     @Override
     @Transactional
@@ -36,6 +40,11 @@ public class UserServiceImpl implements UserService {
         }
         if (userRepository.existsByPhone(dto.getPhone())) {
             throw new DuplicateResourceException("Phone already registered: " + dto.getPhone());
+        }
+        // Public self-registration must never grant ADMIN — that role is
+        // provisioned separately, not chosen by the registering user.
+        if (dto.getRole() == Role.ADMIN) {
+            throw new UnauthorizedActionException("Cannot self-register with the ADMIN role");
         }
 
         User user = new User();
@@ -52,26 +61,36 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserResponseDTO getUserById(Long userId) {
+    public UserResponseDTO getUserById(Long userId, String requesterEmail) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+        // Self-lookup only — this endpoint is not the admin directory, so no one
+        // should be able to pull another user's email/phone by guessing an id.
+        if (!user.getEmail().equalsIgnoreCase(requesterEmail)) {
+            throw new UnauthorizedActionException("You are not authorized to view this user");
+        }
         return mapToResponseDTO(user);
     }
 
     @Override
     public AuthResponseDTO login(UserLoginDTO dto) {
-        User user = userRepository.findByEmail(dto.getEmail())
-                .orElseThrow(() -> new InvalidCredentialsException("Invalid email or password"));
+        User user = userRepository.findByEmail(dto.getEmail()).orElse(null);
 
-        if (!passwordEncoder.matches(dto.getPassword(), user.getPassword())) {
+        if (user == null || !passwordEncoder.matches(dto.getPassword(), user.getPassword())) {
+            auditLogService.record(dto.getEmail(), null, "LOGIN_FAILED", "USER",
+                    user != null ? user.getUserId() : null, "Invalid email or password");
             throw new InvalidCredentialsException("Invalid email or password");
         }
 
         if (user.getAccountStatus() != AccountStatus.ACTIVE) {
+            auditLogService.record(user.getEmail(), user.getRole().name(), "LOGIN_FAILED", "USER",
+                    user.getUserId(), "Account status: " + user.getAccountStatus());
             throw new InvalidCredentialsException("Account is not active");
         }
 
         String token = jwtUtil.generateToken(user);
+
+        auditLogService.record(user.getEmail(), user.getRole().name(), "LOGIN_SUCCESS", "USER", user.getUserId(), null);
 
         return AuthResponseDTO.builder()
                 .token(token)

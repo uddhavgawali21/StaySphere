@@ -28,8 +28,8 @@
 .hero-sub { color: #B9C2D6; max-width: 480px; margin-bottom: 28px; }
 
 .search-bar {
-  display: grid;
-  grid-template-columns: 1.4fr 1fr 1fr 0.7fr 0.7fr auto;
+  display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   background: var(--paper);
   padding: 12px;
@@ -38,11 +38,22 @@
 }
 .search-bar input,
 .search-bar select {
+  flex: 1 1 160px;
+  min-width: 0;
+  width: 100%;
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 10px 12px;
   background: #fff;
   color: var(--ink);
+}
+.search-bar input[name="minRent"],
+.search-bar input[name="maxRent"] {
+  flex-basis: 110px;
+}
+.search-bar .btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .results-grid {
@@ -65,9 +76,15 @@
 
 @media (max-width: 960px) {
   .results-grid { grid-template-columns: repeat(2, 1fr); }
-  .search-bar { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 600px) {
+  .hero { padding: 40px 0 48px; }
   .results-grid { grid-template-columns: 1fr; }
-  .search-bar { grid-template-columns: 1fr; }
+  .search-bar { flex-direction: column; }
+  .search-bar input,
+  .search-bar select,
+  .search-bar .btn {
+    flex-basis: auto;
+  }
+  .search-bar .btn { width: 100%; }
 }

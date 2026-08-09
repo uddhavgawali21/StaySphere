@@ -30,18 +30,18 @@ public class BookingController {
     }
 
     @GetMapping("/{bookingId}")
-    public ResponseEntity<BookingResponseDTO> getBooking(@PathVariable Long bookingId) {
-        return ResponseEntity.ok(bookingService.getBookingById(bookingId));
+    public ResponseEntity<BookingResponseDTO> getBooking(@PathVariable Long bookingId, Authentication authentication) {
+        return ResponseEntity.ok(bookingService.getBookingById(bookingId, authentication.getName()));
     }
 
     @GetMapping("/tenant/{tenantId}")
-    public ResponseEntity<List<BookingResponseDTO>> getBookingsByTenant(@PathVariable Long tenantId) {
-        return ResponseEntity.ok(bookingService.getBookingsByTenant(tenantId));
+    public ResponseEntity<List<BookingResponseDTO>> getBookingsByTenant(@PathVariable Long tenantId, Authentication authentication) {
+        return ResponseEntity.ok(bookingService.getBookingsByTenant(tenantId, authentication.getName()));
     }
 
     @GetMapping("/property/{propertyId}")
-    public ResponseEntity<List<BookingResponseDTO>> getBookingsByProperty(@PathVariable Long propertyId) {
-        return ResponseEntity.ok(bookingService.getBookingsByProperty(propertyId));
+    public ResponseEntity<List<BookingResponseDTO>> getBookingsByProperty(@PathVariable Long propertyId, Authentication authentication) {
+        return ResponseEntity.ok(bookingService.getBookingsByProperty(propertyId, authentication.getName()));
     }
 
     @PutMapping("/{bookingId}/confirm")

@@ -70,6 +70,14 @@ public class PropertyController {
 		return ResponseEntity.ok(propertyService.updateProperty(propertyId, authentication.getName(), dto));
 	}
 
+	// NEW — owner activates/deactivates their property.
+	@PatchMapping("/{propertyId}/status")
+	@PreAuthorize("hasRole('OWNER')")
+	public ResponseEntity<PropertyResponseDTO> updatePropertyStatus(@PathVariable Long propertyId,
+			@Valid @RequestBody PropertyStatusUpdateDTO dto, Authentication authentication) {
+		return ResponseEntity.ok(propertyService.updatePropertyStatus(propertyId, authentication.getName(), dto));
+	}
+
 	@DeleteMapping("/{propertyId}")
 	@PreAuthorize("hasRole('OWNER')")
 	public ResponseEntity<Void> deleteProperty(@PathVariable Long propertyId, Authentication authentication) {

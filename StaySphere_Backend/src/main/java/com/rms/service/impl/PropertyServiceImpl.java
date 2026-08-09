@@ -10,19 +10,24 @@ import com.rms.dtos.PropertyCreateDTO;
 import com.rms.dtos.PropertyResponseDTO;
 import com.rms.dtos.PropertyStatusUpdateDTO;
 import com.rms.dtos.PropertyUpdateDTO;
+import com.rms.entity.Booking;
 import com.rms.entity.Property;
 import com.rms.entity.User;
+import com.rms.enums.BookingStatus;
 import com.rms.enums.OccupancyType;
 import com.rms.enums.PropertyStatus;
 import com.rms.enums.PropertyType;
+import com.rms.exceptions.InvalidBookingStateException;
 import com.rms.exceptions.ResourceNotFoundException;
 import com.rms.exceptions.UnauthorizedActionException;
+import com.rms.repository.BookingRepository;
 import com.rms.repository.PropertyRepository;
 import com.rms.repository.UserRepository;
 import com.rms.service.PropertyService;
 import com.rms.util.PropertySpecification;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,126 +35,176 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class PropertyServiceImpl implements PropertyService {
 
-	private final PropertyRepository propertyRepository;
-	private final UserRepository userRepository;
+    private final PropertyRepository propertyRepository;
+    private final UserRepository userRepository;
+    private final BookingRepository bookingRepository;
 
-	@Override
-	@Transactional
-	public PropertyResponseDTO createProperty(String ownerEmail, PropertyCreateDTO dto) {
-		User owner = userRepository.findByEmail(ownerEmail)
-				.orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + ownerEmail));
+    private static final List<BookingStatus> ACTIVE_BOOKING_STATUSES =
+            List.of(BookingStatus.REQUESTED, BookingStatus.PAYMENT_PENDING, BookingStatus.CONFIRMED);
 
-		Property property = new Property();
-		property.setOwner(owner);
-		property.setTitle(dto.getTitle());
-		property.setDescription(dto.getDescription());
-		property.setPropertyType(dto.getPropertyType());
-		property.setRentAmount(dto.getRentAmount());
-		property.setDepositAmount(dto.getDepositAmount());
-		property.setOccupancyType(dto.getOccupancyType());
-		property.setAddressLine(dto.getAddressLine());
-		property.setArea(dto.getArea());
-		property.setCity(dto.getCity());
-		property.setState(dto.getState());
-		property.setPincode(dto.getPincode());
-		property.setPropertyStatus(PropertyStatus.ACTIVE);
+    @Override
+    @Transactional
+    public PropertyResponseDTO createProperty(String ownerEmail, PropertyCreateDTO dto) {
+        User owner = userRepository.findByEmail(ownerEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + ownerEmail));
 
-		Property saved = propertyRepository.save(property);
-		return mapToResponseDTO(saved);
-	}
+        Property property = new Property();
+        property.setOwner(owner);
+        property.setTitle(dto.getTitle());
+        property.setDescription(dto.getDescription());
+        property.setPropertyType(dto.getPropertyType());
+        property.setRentAmount(dto.getRentAmount());
+        property.setDepositAmount(dto.getDepositAmount());
+        property.setOccupancyType(dto.getOccupancyType());
+        property.setAddressLine(dto.getAddressLine());
+        property.setArea(dto.getArea());
+        property.setCity(dto.getCity());
+        property.setState(dto.getState());
+        property.setPincode(dto.getPincode());
+        property.setPropertyStatus(PropertyStatus.ACTIVE);
+        property.setTotalRooms(dto.getTotalRooms() != null ? dto.getTotalRooms() : 1);
 
-	@Override
-	public PropertyResponseDTO getPropertyById(Long propertyId) {
-		Property property = propertyRepository.findById(propertyId)
-				.orElseThrow(() -> new ResourceNotFoundException("Property not found with id: " + propertyId));
-		return mapToResponseDTO(property);
-	}
+        Property saved = propertyRepository.save(property);
+        return mapToResponseDTO(saved);
+    }
 
-	@Override
-	public List<PropertyResponseDTO> getPropertiesByOwner(Long ownerId) {
-		return propertyRepository.findAllByOwner_UserId(ownerId).stream().map(this::mapToResponseDTO)
-				.collect(Collectors.toList());
-	}
+    @Override
+    public PropertyResponseDTO getPropertyById(Long propertyId) {
+        Property property = propertyRepository.findById(propertyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Property not found with id: " + propertyId));
+        return mapToResponseDTO(property);
+    }
 
-	@Override
-	@Transactional
-	public PropertyResponseDTO updateProperty(Long propertyId, String requesterEmail, PropertyUpdateDTO dto) {
-		Property property = propertyRepository.findById(propertyId)
-				.orElseThrow(() -> new ResourceNotFoundException("Property not found with id: " + propertyId));
+    @Override
+    public List<PropertyResponseDTO> getPropertiesByOwner(Long ownerId) {
+        return propertyRepository.findAllByOwner_UserId(ownerId).stream()
+                .map(this::mapToResponseDTO)
+                .collect(Collectors.toList());
+    }
 
-		validateOwnership(property, requesterEmail);
+    @Override
+    @Transactional
+    public PropertyResponseDTO updateProperty(Long propertyId, String requesterEmail, PropertyUpdateDTO dto) {
+        Property property = propertyRepository.findById(propertyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Property not found with id: " + propertyId));
 
-		property.setTitle(dto.getTitle());
-		property.setDescription(dto.getDescription());
-		property.setPropertyType(dto.getPropertyType());
-		property.setRentAmount(dto.getRentAmount());
-		property.setDepositAmount(dto.getDepositAmount());
-		property.setOccupancyType(dto.getOccupancyType());
-		property.setAddressLine(dto.getAddressLine());
-		property.setArea(dto.getArea());
-		property.setCity(dto.getCity());
-		property.setState(dto.getState());
-		property.setPincode(dto.getPincode());
+        validateOwnership(property, requesterEmail);
 
-		Property updated = propertyRepository.save(property);
-		return mapToResponseDTO(updated);
-	}
+        property.setTitle(dto.getTitle());
+        property.setDescription(dto.getDescription());
+        property.setPropertyType(dto.getPropertyType());
+        property.setRentAmount(dto.getRentAmount());
+        property.setDepositAmount(dto.getDepositAmount());
+        property.setOccupancyType(dto.getOccupancyType());
+        property.setAddressLine(dto.getAddressLine());
+        property.setArea(dto.getArea());
+        property.setCity(dto.getCity());
+        property.setState(dto.getState());
+        property.setPincode(dto.getPincode());
+        if (dto.getTotalRooms() != null) {
+            property.setTotalRooms(dto.getTotalRooms());
+        }
 
-	@Override
-	@Transactional
-	public void deleteProperty(Long propertyId, String requesterEmail) {
-		Property property = propertyRepository.findById(propertyId)
-				.orElseThrow(() -> new ResourceNotFoundException("Property not found with id: " + propertyId));
+        Property updated = propertyRepository.save(property);
+        return mapToResponseDTO(updated);
+    }
 
-		validateOwnership(property, requesterEmail);
-		propertyRepository.delete(property);
-	}
+    @Override
+    @Transactional
+    public void deleteProperty(Long propertyId, String requesterEmail) {
+        Property property = propertyRepository.findById(propertyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Property not found with id: " + propertyId));
 
-	@Override
-	public List<PropertyResponseDTO> getAllProperties() {
-		return propertyRepository.findByPropertyStatus(PropertyStatus.ACTIVE).stream().map(this::mapToResponseDTO)
-				.toList();
-	}
+        validateOwnership(property, requesterEmail);
 
-	@Override
-	public Page<PropertyResponseDTO> searchProperties(String city,
-	                                                    PropertyType propertyType,
-	                                                    OccupancyType occupancyType,
-	                                                    BigDecimal minRent,
-	                                                    BigDecimal maxRent,
-	                                                    Pageable pageable) {
-		var spec = PropertySpecification.withFilters(city, propertyType, occupancyType, minRent, maxRent);
-		return propertyRepository.findAll(spec, pageable).map(this::mapToResponseDTO);
-	}
+        List<Booking> activeBookings = bookingRepository.findAllByProperty_PropertyId(propertyId).stream()
+                .filter(b -> b.getBookingStatus() != BookingStatus.REJECTED
+                        && b.getBookingStatus() != BookingStatus.CANCELLED)
+                .toList();
+        if (!activeBookings.isEmpty()) {
+            throw new InvalidBookingStateException(
+                    "Cannot delete property with active bookings; reject/cancel them first or mark the property INACTIVE");
+        }
 
-	private void validateOwnership(Property property, String requesterEmail) {
-		if (!property.getOwner().getEmail().equalsIgnoreCase(requesterEmail)) {
-			throw new UnauthorizedActionException("You are not authorized to modify this property");
-		}
-	}
-	
-	@Override
-	@Transactional
-	public PropertyResponseDTO updatePropertyStatus(Long propertyId, String requesterEmail, PropertyStatusUpdateDTO dto) {
-	    Property property = propertyRepository.findById(propertyId)
-	            .orElseThrow(() -> new ResourceNotFoundException("Property not found with id: " + propertyId));
+        propertyRepository.delete(property);
+    }
 
-	    validateOwnership(property, requesterEmail);
+    @Override
+    @Transactional
+    public PropertyResponseDTO updatePropertyStatus(Long propertyId, String requesterEmail, PropertyStatusUpdateDTO dto) {
+        Property property = propertyRepository.findById(propertyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Property not found with id: " + propertyId));
 
-	    property.setPropertyStatus(dto.getPropertyStatus());
-	    Property updated = propertyRepository.save(property);
-	    return mapToResponseDTO(updated);
-	}
+        validateOwnership(property, requesterEmail);
 
-	private PropertyResponseDTO mapToResponseDTO(Property property) {
-		return PropertyResponseDTO.builder().propertyId(property.getPropertyId())
-				.ownerId(property.getOwner().getUserId()).title(property.getTitle())
-				.description(property.getDescription()).propertyType(property.getPropertyType())
-				.rentAmount(property.getRentAmount()).depositAmount(property.getDepositAmount())
-				.occupancyType(property.getOccupancyType()).addressLine(property.getAddressLine())
-				.area(property.getArea()).city(property.getCity()).state(property.getState())
-				.pincode(property.getPincode()).propertyStatus(property.getPropertyStatus())
-				.createdAt(property.getCreatedAt()).updatedAt(property.getUpdatedAt()).build();
-	}
+        // Deactivating just flips the flag — existing bookings for this
+        // property stay exactly as they are and remain fully accessible.
+        // createBooking() already rejects new bookings once this is INACTIVE.
+        property.setPropertyStatus(dto.getPropertyStatus());
+        Property updated = propertyRepository.save(property);
+        return mapToResponseDTO(updated);
+    }
 
+    @Override
+    public List<PropertyResponseDTO> getAllProperties() {
+        return propertyRepository.findByPropertyStatus(PropertyStatus.ACTIVE).stream()
+                .map(this::mapToResponseDTO)
+                .toList();
+    }
+
+    @Override
+    public Page<PropertyResponseDTO> searchProperties(String city,
+                                                       PropertyType propertyType,
+                                                       OccupancyType occupancyType,
+                                                       BigDecimal minRent,
+                                                       BigDecimal maxRent,
+                                                       Pageable pageable) {
+        var spec = PropertySpecification.withFilters(city, propertyType, occupancyType, minRent, maxRent);
+        return propertyRepository.findAll(spec, pageable).map(this::mapToResponseDTO);
+    }
+
+    private void validateOwnership(Property property, String requesterEmail) {
+        if (!property.getOwner().getEmail().equalsIgnoreCase(requesterEmail)) {
+            throw new UnauthorizedActionException("You are not authorized to modify this property");
+        }
+    }
+
+    private PropertyResponseDTO mapToResponseDTO(Property property) {
+        int totalRooms = property.getTotalRooms() != null ? property.getTotalRooms() : 1;
+        int available;
+
+        // Availability = property ACTIVE + available rooms. An INACTIVE
+        // property shows 0 available regardless of room count.
+        if (property.getPropertyStatus() != PropertyStatus.ACTIVE) {
+            available = 0;
+        } else {
+            List<Booking> activeNow = bookingRepository.findOverlappingBookings(
+                    property.getPropertyId(),
+                    LocalDate.now(),
+                    null,
+                    ACTIVE_BOOKING_STATUSES);
+            available = Math.max(0, totalRooms - activeNow.size());
+        }
+
+        return PropertyResponseDTO.builder()
+                .propertyId(property.getPropertyId())
+                .ownerId(property.getOwner().getUserId())
+                .title(property.getTitle())
+                .description(property.getDescription())
+                .propertyType(property.getPropertyType())
+                .rentAmount(property.getRentAmount())
+                .depositAmount(property.getDepositAmount())
+                .occupancyType(property.getOccupancyType())
+                .addressLine(property.getAddressLine())
+                .area(property.getArea())
+                .city(property.getCity())
+                .state(property.getState())
+                .pincode(property.getPincode())
+                .propertyStatus(property.getPropertyStatus())
+                .totalRooms(totalRooms)
+                .availableRooms(available)
+                .createdAt(property.getCreatedAt())
+                .updatedAt(property.getUpdatedAt())
+                .build();
+    }
 }

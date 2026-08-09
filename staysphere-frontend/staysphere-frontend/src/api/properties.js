@@ -1,12 +1,7 @@
 import { apiClient } from './client'
 
-// NOTE: the backend's /properties/search currently ignores query params and
-// just returns all ACTIVE properties (same as GET /properties) — no server-side
-// filtering or pagination. Filtering/pagination is done client-side in Home.jsx
-// until that endpoint is restored to take real filters. Swap this back to
-// passing { params } once it does.
-export const searchProperties = () =>
-  apiClient.get('/properties/search').then((r) => r.data)
+export const searchProperties = (params = {}) =>
+  apiClient.get('/properties/search', { params }).then((r) => r.data)
 
 export const getProperty = (propertyId) =>
   apiClient.get(`/properties/${propertyId}`).then((r) => r.data)
@@ -19,6 +14,10 @@ export const createProperty = (payload) =>
 
 export const updateProperty = (propertyId, payload) =>
   apiClient.put(`/properties/${propertyId}`, payload).then((r) => r.data)
+
+// NEW — activate/deactivate a property. propertyStatus: 'ACTIVE' | 'INACTIVE'
+export const updatePropertyStatus = (propertyId, propertyStatus) =>
+  apiClient.patch(`/properties/${propertyId}/status`, { propertyStatus }).then((r) => r.data)
 
 export const deleteProperty = (propertyId) =>
   apiClient.delete(`/properties/${propertyId}`).then((r) => r.data)

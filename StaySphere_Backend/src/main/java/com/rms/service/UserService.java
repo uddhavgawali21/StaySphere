@@ -7,6 +7,6 @@ import com.rms.dtos.UserResponseDTO;
 
 public interface UserService {
     UserResponseDTO registerUser(UserRegisterDTO dto);
-    UserResponseDTO getUserById(Long userId);
+    UserResponseDTO getUserById(Long userId, String requesterEmail);
     AuthResponseDTO login(UserLoginDTO dto);
 }

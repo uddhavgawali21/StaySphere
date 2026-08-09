@@ -18,10 +18,12 @@ export default function PropertyDetails() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  const [moveInDate, setMoveInDate] = useState('')
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
   const [bookingError, setBookingError] = useState('')
   const [bookingSuccess, setBookingSuccess] = useState('')
   const [booking, setBooking] = useState(false)
+  const [activeImageIndex, setActiveImageIndex] = useState(0)
 
   useEffect(() => {
     async function load() {
@@ -34,7 +36,9 @@ export default function PropertyDetails() {
         ])
         setProperty(propertyData)
         setFacilities(facilityData)
-        setImages(imageData)
+        const orderedImages = [...imageData].sort((a, b) => (b.primary === true) - (a.primary === true))
+        setImages(orderedImages)
+        setActiveImageIndex(0)
       } catch {
         setError('This property could not be found.')
       } finally {
@@ -49,10 +53,7 @@ export default function PropertyDetails() {
     setBookingError('')
     setBookingSuccess('')
 
-    if (!user) {
-      navigate('/login')
-      return
-    }
+    if (!user) { navigate('/login'); return }
     if (user.role !== 'TENANT') {
       setBookingError('Only tenant accounts can request a booking.')
       return
@@ -60,7 +61,7 @@ export default function PropertyDetails() {
 
     setBooking(true)
     try {
-      const result = await createBooking({ propertyId: Number(propertyId), moveInDate })
+      const result = await createBooking({ propertyId: Number(propertyId), startDate, endDate: endDate || null })
       setBookingSuccess(`Booking requested — status: ${result.bookingStatus}. Track it under "My bookings".`)
     } catch (err) {
       setBookingError(apiErrorMessage(err, 'Could not create the booking.'))
@@ -73,17 +74,46 @@ export default function PropertyDetails() {
   if (error) return <div className="container page"><div className="banner-error">{error}</div></div>
   if (!property) return null
 
-  const primaryImage = images.find((img) => img.primary)
+  const activeImage = images[activeImageIndex]
+  const isMultiRoom = property.totalRooms > 1
+  const noRoomsLeft = isMultiRoom && property.availableRooms <= 0
+  const propertyUnavailable = property.propertyStatus !== 'ACTIVE' || noRoomsLeft
+
+  function showPrevImage() { setActiveImageIndex((i) => (i - 1 + images.length) % images.length) }
+  function showNextImage() { setActiveImageIndex((i) => (i + 1) % images.length) }
 
   return (
     <div className="page">
       <div className="container details-layout">
         <div>
-          <div className="details-arch">
-            {primaryImage ? (
-              <img src={primaryImage.imageUrl} alt={property.title} />
-            ) : (
-              <span>{property.propertyType}</span>
+          <div className="details-gallery">
+            <div className="details-arch">
+              {activeImage ? (
+                <img src={activeImage.imageUrl} alt={`${property.title} — photo ${activeImageIndex + 1}`} />
+              ) : (
+                <span>{property.propertyType}</span>
+              )}
+              {images.length > 1 && (
+                <>
+                  <button type="button" className="gallery-nav gallery-nav-prev" onClick={showPrevImage} aria-label="Previous photo">‹</button>
+                  <button type="button" className="gallery-nav gallery-nav-next" onClick={showNextImage} aria-label="Next photo">›</button>
+                  <span className="gallery-count">{activeImageIndex + 1} / {images.length}</span>
+                </>
+              )}
+            </div>
+            {images.length > 1 && (
+              <div className="gallery-thumbs">
+                {images.map((img, index) => (
+                  <button
+                    type="button"
+                    key={img.imageId ?? index}
+                    className={`gallery-thumb ${index === activeImageIndex ? 'gallery-thumb-active' : ''}`}
+                    onClick={() => setActiveImageIndex(index)}
+                  >
+                    <img src={img.imageUrl} alt={`${property.title} thumbnail ${index + 1}`} />
+                  </button>
+                ))}
+              </div>
             )}
           </div>
 
@@ -113,30 +143,55 @@ export default function PropertyDetails() {
           </div>
           <p className="deposit-line">Deposit: ₹{Number(property.depositAmount).toLocaleString('en-IN')}</p>
           <p className="deposit-line">{property.occupancyType} occupancy · {property.propertyType}</p>
+          {/* FIX: show available rooms for multi-room properties */}
+          {property.totalRooms > 1 && (
+            <p className="deposit-line" style={{ color: property.availableRooms > 0 ? 'var(--sage)' : 'var(--rust)' }}>
+              {property.availableRooms} of {property.totalRooms} rooms available
+            </p>
+          )}
 
           <hr />
 
-          <form onSubmit={handleBook}>
-            {bookingError && <div className="banner-error">{bookingError}</div>}
-            {bookingSuccess && (
-              <div className="banner-error" style={{ background: 'var(--sage-dim)', color: 'var(--sage)' }}>
-                {bookingSuccess}
-              </div>
-            )}
-            <div className="field">
-              <label>Move-in date</label>
-              <input
-                type="date"
-                required
-                value={moveInDate}
-                min={new Date(Date.now() + 86400000).toISOString().slice(0, 10)}
-                onChange={(e) => setMoveInDate(e.target.value)}
-              />
+          {propertyUnavailable ? (
+            <div className="banner-error">
+              {noRoomsLeft
+                ? 'All rooms are currently booked for this property.'
+                : 'This property is not currently available for booking.'}
             </div>
-            <button className="btn btn-primary" type="submit" disabled={booking} style={{ width: '100%' }}>
-              {booking ? 'Requesting…' : 'Request booking'}
-            </button>
-          </form>
+          ) : (
+            <form onSubmit={handleBook}>
+              {bookingError && <div className="banner-error">{bookingError}</div>}
+              {/* FIX: use banner-success class — was using banner-error with inline style hack */}
+              {bookingSuccess && <div className="banner-success">{bookingSuccess}</div>}
+
+              <div className="field">
+                <label>Start date</label>
+                <input
+                  type="date"
+                  required
+                  value={startDate}
+                  min={new Date(Date.now() + 86400000).toISOString().slice(0, 10)}
+                  onChange={(e) => {
+                    setStartDate(e.target.value)
+                    if (endDate && endDate <= e.target.value) setEndDate('')
+                  }}
+                />
+              </div>
+              <div className="field">
+                <label>End date <span className="deposit-line" style={{ display: 'inline' }}>(optional)</span></label>
+                <input
+                  type="date"
+                  value={endDate}
+                  disabled={!startDate}
+                  min={startDate ? new Date(new Date(startDate).getTime() + 86400000).toISOString().slice(0, 10) : undefined}
+                  onChange={(e) => setEndDate(e.target.value)}
+                />
+              </div>
+              <button className="btn btn-primary" type="submit" disabled={booking} style={{ width: '100%' }}>
+                {booking ? 'Requesting…' : 'Request booking'}
+              </button>
+            </form>
+          )}
         </aside>
       </div>
     </div>

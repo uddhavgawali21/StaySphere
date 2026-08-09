@@ -1,7 +1,8 @@
 package com.rms.dtos;
 
-import com.rms.enums.PaymentMethod;
+import com.rms.enums.PaymentSource;
 import com.rms.enums.PaymentStatus;
+import com.rms.enums.PaymentType;
 
 import lombok.Builder;
 import lombok.Getter;
@@ -18,7 +19,12 @@ public class TransactionResponseDTO {
     private Long bookingId;
     private String transactionRef;
     private BigDecimal amount;
-    private PaymentMethod paymentMethod;
+    private PaymentType paymentType;
     private PaymentStatus paymentStatus;
     private LocalDateTime paymentDate;
+
+    // NEW
+    private PaymentSource paymentSource;   // ONLINE | OFFLINE
+    private String notes;                  // offline note, if any
+    private String recordedByOwnerName;    // set only for OFFLINE transactions
 }

@@ -9,6 +9,12 @@ export const getAdminUsers = (params) =>
 export const updateUserStatus = (userId, accountStatus) =>
   apiClient.put(`/admin/users/${userId}/status`, { accountStatus }).then((r) => r.data)
 
+export const resetUserPassword = (userId, newPassword) =>
+  apiClient.put(`/admin/users/${userId}/reset-password`, { newPassword }).then((r) => r.data)
+
+export const getAuditLogs = (params) =>
+  apiClient.get('/admin/audit-logs', { params }).then((r) => r.data)
+
 export const getAdminProperties = (params) =>
   apiClient.get('/admin/properties', { params }).then((r) => r.data)
 
@@ -17,3 +23,9 @@ export const updateAdminPropertyStatus = (propertyId, propertyStatus) =>
 
 export const getAdminBookings = (params) =>
   apiClient.get('/admin/bookings', { params }).then((r) => r.data)
+
+export const getOwnerPaymentAccount = () =>
+  apiClient.get('/owner/payment-account').then((r) => r.data)
+
+export const saveOwnerPaymentAccount = (dto) =>
+  apiClient.put('/owner/payment-account', dto).then((r) => r.data)

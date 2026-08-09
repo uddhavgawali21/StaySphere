@@ -43,8 +43,11 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     @Transactional
     public PaymentOrderResponseDTO createOrder(PaymentOrderRequestDTO dto) {
+        // Fail fast on a duplicate transaction reference before ever calling
+        // out to Razorpay — no point creating an external order we'd discard.
         if (paymentRepository.existsByTransactionRef(dto.getTransactionRef())) {
-            throw new DuplicateTransactionException("Transaction reference already exists: " + dto.getTransactionRef());
+            throw new DuplicateTransactionException(
+                    "Transaction reference already exists: " + dto.getTransactionRef());
         }
 
         long amountInPaise = dto.getAmount()
@@ -53,15 +56,23 @@ public class PaymentServiceImpl implements PaymentService {
                 .longValueExact();
 
         RazorpayOrder order = razorpayClient.createOrder(amountInPaise, CURRENCY, dto.getTransactionRef());
-        log.info("Created Razorpay order {} for booking {} (ref {})", order.id(), dto.getBookingId(), dto.getTransactionRef());
+        log.info("Created Razorpay order {} for booking {} (ref {})",
+                order.id(), dto.getBookingId(), dto.getTransactionRef());
 
         Payment payment = new Payment();
         payment.setBookingId(dto.getBookingId());
         payment.setTransactionRef(dto.getTransactionRef());
         payment.setAmount(dto.getAmount());
-        payment.setPaymentMethod(dto.getPaymentMethod());
+        // paymentMethod no longer set — nullable in entity, Razorpay Checkout owns method selection
         payment.setPaymentStatus(PaymentStatus.PENDING);
         payment.setRazorpayOrderId(order.id());
+        // Payee (owner payout account) details resolved by the main backend from
+        // OwnerPaymentAccount — persisted here so every payment is auditable
+        // against a real, non-hardcoded account.
+        payment.setPayeeName(dto.getPayeeName());
+        payment.setPayeeUpiId(dto.getPayeeUpiId());
+        payment.setPayeeBankAccountNumber(dto.getPayeeBankAccountNumber());
+        payment.setPayeeIfscCode(dto.getPayeeIfscCode());
 
         Payment saved = paymentRepository.save(payment);
 
@@ -78,7 +89,8 @@ public class PaymentServiceImpl implements PaymentService {
     @Transactional
     public PaymentResponseDTO verifyPayment(PaymentVerifyRequestDTO dto) {
         Payment payment = paymentRepository.findById(dto.getPaymentId())
-                .orElseThrow(() -> new PaymentNotFoundException("Payment not found with id: " + dto.getPaymentId()));
+                .orElseThrow(() -> new PaymentNotFoundException(
+                        "Payment not found with id: " + dto.getPaymentId()));
 
         if (!payment.getRazorpayOrderId().equals(dto.getRazorpayOrderId())) {
             throw new RazorpayException("Razorpay order id does not match this payment");
@@ -93,15 +105,15 @@ public class PaymentServiceImpl implements PaymentService {
         if (signatureValid) {
             payment.setPaymentStatus(PaymentStatus.SUCCESS);
             payment.setPaymentDate(LocalDateTime.now());
-            log.info("Payment {} verified successfully (ref {})", payment.getPaymentId(), payment.getTransactionRef());
+            log.info("Payment {} verified successfully (ref {})",
+                    payment.getPaymentId(), payment.getTransactionRef());
         } else {
             payment.setPaymentStatus(PaymentStatus.FAILED);
-            log.warn("Signature verification FAILED for payment {} (ref {})", payment.getPaymentId(), payment.getTransactionRef());
+            log.warn("Signature verification FAILED for payment {} (ref {})",
+                    payment.getPaymentId(), payment.getTransactionRef());
         }
 
         Payment updated = paymentRepository.save(payment);
-        // No throw on invalid signature — that's a normal outcome the caller should
-        // see reflected in paymentStatus, not treat as a service error.
         return mapToResponseDTO(updated);
     }
 
@@ -120,12 +132,9 @@ public class PaymentServiceImpl implements PaymentService {
             String razorpayPaymentId = paymentEntity.path("id").asText();
 
             paymentRepository.findByRazorpayOrderId(razorpayOrderId).ifPresentOrElse(payment -> {
-                // Idempotent — a webhook can arrive more than once, or after the
-                // client-side /verify call already settled this payment.
                 if (payment.getPaymentStatus() == PaymentStatus.SUCCESS) {
-                    return;
+                    return; // idempotent
                 }
-
                 if ("payment.captured".equals(eventType)) {
                     payment.setPaymentStatus(PaymentStatus.SUCCESS);
                     payment.setPaymentDate(LocalDateTime.now());
@@ -155,7 +164,8 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     public PaymentResponseDTO getByTransactionRef(String transactionRef) {
         Payment payment = paymentRepository.findByTransactionRef(transactionRef)
-                .orElseThrow(() -> new PaymentNotFoundException("Payment not found with transaction ref: " + transactionRef));
+                .orElseThrow(() -> new PaymentNotFoundException(
+                        "Payment not found with transaction ref: " + transactionRef));
         return mapToResponseDTO(payment);
     }
 
@@ -173,7 +183,7 @@ public class PaymentServiceImpl implements PaymentService {
                 .bookingId(payment.getBookingId())
                 .transactionRef(payment.getTransactionRef())
                 .amount(payment.getAmount())
-                .paymentMethod(payment.getPaymentMethod())
+                // paymentMethod intentionally omitted — nullable, not meaningful post-Razorpay
                 .paymentStatus(payment.getPaymentStatus())
                 .paymentDate(payment.getPaymentDate())
                 .build();

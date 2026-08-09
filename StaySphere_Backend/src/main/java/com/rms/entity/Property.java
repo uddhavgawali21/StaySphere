@@ -65,4 +65,10 @@ public class Property extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "property_status", nullable = false, length = 20)
     private PropertyStatus propertyStatus;
+
+    // NEW — how many independent bookable rooms this property has.
+    // Default 1 preserves existing behaviour for ROOM/FLAT.
+    // Set > 1 for PG/HOSTEL so multiple tenants can book simultaneously.
+    @Column(name = "total_rooms", nullable = false)
+    private Integer totalRooms = 1;
 }
