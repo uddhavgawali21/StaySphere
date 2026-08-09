@@ -36,7 +36,6 @@ export default function PropertyDetails() {
         ])
         setProperty(propertyData)
         setFacilities(facilityData)
-        // Primary image leads the gallery; the rest keep their existing order.
         const orderedImages = [...imageData].sort((a, b) => (b.primary === true) - (a.primary === true))
         setImages(orderedImages)
         setActiveImageIndex(0)
@@ -54,10 +53,7 @@ export default function PropertyDetails() {
     setBookingError('')
     setBookingSuccess('')
 
-    if (!user) {
-      navigate('/login')
-      return
-    }
+    if (!user) { navigate('/login'); return }
     if (user.role !== 'TENANT') {
       setBookingError('Only tenant accounts can request a booking.')
       return
@@ -79,13 +75,12 @@ export default function PropertyDetails() {
   if (!property) return null
 
   const activeImage = images[activeImageIndex]
+  const isMultiRoom = property.totalRooms > 1
+  const noRoomsLeft = isMultiRoom && property.availableRooms <= 0
+  const propertyUnavailable = property.propertyStatus !== 'ACTIVE' || noRoomsLeft
 
-  function showPrevImage() {
-    setActiveImageIndex((i) => (i - 1 + images.length) % images.length)
-  }
-  function showNextImage() {
-    setActiveImageIndex((i) => (i + 1) % images.length)
-  }
+  function showPrevImage() { setActiveImageIndex((i) => (i - 1 + images.length) % images.length) }
+  function showNextImage() { setActiveImageIndex((i) => (i + 1) % images.length) }
 
   return (
     <div className="page">
@@ -98,7 +93,6 @@ export default function PropertyDetails() {
               ) : (
                 <span>{property.propertyType}</span>
               )}
-
               {images.length > 1 && (
                 <>
                   <button type="button" className="gallery-nav gallery-nav-prev" onClick={showPrevImage} aria-label="Previous photo">‹</button>
@@ -107,7 +101,6 @@ export default function PropertyDetails() {
                 </>
               )}
             </div>
-
             {images.length > 1 && (
               <div className="gallery-thumbs">
                 {images.map((img, index) => (
@@ -150,50 +143,55 @@ export default function PropertyDetails() {
           </div>
           <p className="deposit-line">Deposit: ₹{Number(property.depositAmount).toLocaleString('en-IN')}</p>
           <p className="deposit-line">{property.occupancyType} occupancy · {property.propertyType}</p>
+          {/* FIX: show available rooms for multi-room properties */}
+          {property.totalRooms > 1 && (
+            <p className="deposit-line" style={{ color: property.availableRooms > 0 ? 'var(--sage)' : 'var(--rust)' }}>
+              {property.availableRooms} of {property.totalRooms} rooms available
+            </p>
+          )}
 
           <hr />
 
-          <form onSubmit={handleBook}>
-            {bookingError && <div className="banner-error">{bookingError}</div>}
-            {bookingSuccess && (
-              <div className="banner-error" style={{ background: 'var(--sage-dim)', color: 'var(--sage)' }}>
-                {bookingSuccess}
+          {propertyUnavailable ? (
+            <div className="banner-error">
+              {noRoomsLeft
+                ? 'All rooms are currently booked for this property.'
+                : 'This property is not currently available for booking.'}
+            </div>
+          ) : (
+            <form onSubmit={handleBook}>
+              {bookingError && <div className="banner-error">{bookingError}</div>}
+              {/* FIX: use banner-success class — was using banner-error with inline style hack */}
+              {bookingSuccess && <div className="banner-success">{bookingSuccess}</div>}
+
+              <div className="field">
+                <label>Start date</label>
+                <input
+                  type="date"
+                  required
+                  value={startDate}
+                  min={new Date(Date.now() + 86400000).toISOString().slice(0, 10)}
+                  onChange={(e) => {
+                    setStartDate(e.target.value)
+                    if (endDate && endDate <= e.target.value) setEndDate('')
+                  }}
+                />
               </div>
-            )}
-            <div className="field">
-              <label>Start date</label>
-              <input
-                type="date"
-                required
-                value={startDate}
-                min={new Date(Date.now() + 86400000).toISOString().slice(0, 10)}
-                onChange={(e) => {
-                  setStartDate(e.target.value)
-                  // Keep end date valid if it's now before the new start date
-                  if (endDate && endDate <= e.target.value) {
-                    setEndDate('')
-                  }
-                }}
-              />
-            </div>
-            <div className="field">
-              <label>End date <span className="deposit-line" style={{ display: 'inline' }}>(optional)</span></label>
-              <input
-                type="date"
-                value={endDate}
-                disabled={!startDate}
-                min={
-                  startDate
-                    ? new Date(new Date(startDate).getTime() + 86400000).toISOString().slice(0, 10)
-                    : undefined
-                }
-                onChange={(e) => setEndDate(e.target.value)}
-              />
-            </div>
-            <button className="btn btn-primary" type="submit" disabled={booking} style={{ width: '100%' }}>
-              {booking ? 'Requesting…' : 'Request booking'}
-            </button>
-          </form>
+              <div className="field">
+                <label>End date <span className="deposit-line" style={{ display: 'inline' }}>(optional)</span></label>
+                <input
+                  type="date"
+                  value={endDate}
+                  disabled={!startDate}
+                  min={startDate ? new Date(new Date(startDate).getTime() + 86400000).toISOString().slice(0, 10) : undefined}
+                  onChange={(e) => setEndDate(e.target.value)}
+                />
+              </div>
+              <button className="btn btn-primary" type="submit" disabled={booking} style={{ width: '100%' }}>
+                {booking ? 'Requesting…' : 'Request booking'}
+              </button>
+            </form>
+          )}
         </aside>
       </div>
     </div>

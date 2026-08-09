@@ -45,6 +45,7 @@ export default function Navbar() {
             {user?.role === 'OWNER' && <Link to="/owner/dashboard" onClick={closeMenu}>Dashboard</Link>}
             {user?.role === 'OWNER' && <Link to="/owner/properties" onClick={closeMenu}>My properties</Link>}
             {user?.role === 'OWNER' && <Link to="/owner/bookings" onClick={closeMenu}>Requests</Link>}
+            {user?.role === 'OWNER' && <Link to="/owner/payment-account" onClick={closeMenu}>Payout account</Link>}
             {user?.role === 'ADMIN' && <Link to="/admin" onClick={closeMenu}>Admin</Link>}
           </nav>
 

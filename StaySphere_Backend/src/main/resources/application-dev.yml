@@ -25,3 +25,4 @@ payment:
   service:
     base-url: ${PAYMENT_SERVICE_BASE_URL:http://localhost:8081}
     internal-api-key: ${INTERNAL_API_KEY:staysphere-college-project-internal-key-2026}
+  token-amount: ${PAYMENT_TOKEN_AMOUNT:2000}

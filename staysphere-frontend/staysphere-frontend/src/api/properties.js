@@ -1,7 +1,5 @@
 import { apiClient } from './client'
 
-// Backend supports real server-side filtering + pagination (city, propertyType,
-// occupancyType, minRent, maxRent, page, size) via PropertySpecification.
 export const searchProperties = (params = {}) =>
   apiClient.get('/properties/search', { params }).then((r) => r.data)
 
@@ -16,6 +14,10 @@ export const createProperty = (payload) =>
 
 export const updateProperty = (propertyId, payload) =>
   apiClient.put(`/properties/${propertyId}`, payload).then((r) => r.data)
+
+// NEW — activate/deactivate a property. propertyStatus: 'ACTIVE' | 'INACTIVE'
+export const updatePropertyStatus = (propertyId, propertyStatus) =>
+  apiClient.patch(`/properties/${propertyId}/status`, { propertyStatus }).then((r) => r.data)
 
 export const deleteProperty = (propertyId) =>
   apiClient.delete(`/properties/${propertyId}`).then((r) => r.data)

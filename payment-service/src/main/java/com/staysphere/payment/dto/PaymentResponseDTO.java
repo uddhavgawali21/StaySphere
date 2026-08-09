@@ -1,6 +1,5 @@
 package com.staysphere.payment.dto;
 
-import com.staysphere.payment.enums.PaymentMethod;
 import com.staysphere.payment.enums.PaymentStatus;
 
 import lombok.Builder;
@@ -18,7 +17,7 @@ public class PaymentResponseDTO {
     private Long bookingId;
     private String transactionRef;
     private BigDecimal amount;
-    private PaymentMethod paymentMethod;
+    // paymentMethod removed — Razorpay manages method selection
     private PaymentStatus paymentStatus;
     private LocalDateTime paymentDate;
 }

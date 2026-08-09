@@ -2,6 +2,7 @@ package com.rms.service;
 
 import com.rms.dtos.PropertyCreateDTO;
 import com.rms.dtos.PropertyResponseDTO;
+import com.rms.dtos.PropertyStatusUpdateDTO;
 import com.rms.dtos.PropertyUpdateDTO;
 import com.rms.enums.OccupancyType;
 import com.rms.enums.PropertyType;
@@ -35,4 +36,9 @@ public interface PropertyService {
 
     void deleteProperty(Long propertyId,
                         String requesterEmail);
+
+    // NEW — owner activates/deactivates their property.
+    PropertyResponseDTO updatePropertyStatus(Long propertyId,
+                                              String requesterEmail,
+                                              PropertyStatusUpdateDTO dto);
 }

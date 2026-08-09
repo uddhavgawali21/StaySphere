@@ -1,6 +1,5 @@
 package com.rms.dtos;
 
-import com.rms.enums.PaymentMethod;
 import com.rms.enums.PaymentStatus;
 
 import lombok.Getter;
@@ -16,7 +15,7 @@ public class PaymentServiceResponseDTO {
     private Long bookingId;
     private String transactionRef;
     private BigDecimal amount;
-    private PaymentMethod paymentMethod;
+    // paymentMethod removed to match payment-service's PaymentResponseDTO
     private PaymentStatus paymentStatus;
     private LocalDateTime paymentDate;
 }

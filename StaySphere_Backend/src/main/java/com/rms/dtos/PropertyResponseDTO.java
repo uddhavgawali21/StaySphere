@@ -29,6 +29,8 @@ public class PropertyResponseDTO {
     private String state;
     private String pincode;
     private PropertyStatus propertyStatus;
+    private Integer totalRooms;      // NEW
+    private Integer availableRooms;  // NEW — computed at query time
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

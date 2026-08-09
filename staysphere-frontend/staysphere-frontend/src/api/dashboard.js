@@ -23,3 +23,9 @@ export const updateAdminPropertyStatus = (propertyId, propertyStatus) =>
 
 export const getAdminBookings = (params) =>
   apiClient.get('/admin/bookings', { params }).then((r) => r.data)
+
+export const getOwnerPaymentAccount = () =>
+  apiClient.get('/owner/payment-account').then((r) => r.data)
+
+export const saveOwnerPaymentAccount = (dto) =>
+  apiClient.put('/owner/payment-account', dto).then((r) => r.data)

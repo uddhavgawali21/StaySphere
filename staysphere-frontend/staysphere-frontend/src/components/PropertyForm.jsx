@@ -7,6 +7,7 @@ const blank = {
   rentAmount: '',
   depositAmount: '',
   occupancyType: 'SINGLE',
+  totalRooms: 1,
   addressLine: '',
   area: '',
   city: '',
@@ -31,7 +32,8 @@ export default function PropertyForm({ initialValues, onSubmit, onCancel, submit
       await onSubmit({
         ...form,
         rentAmount: Number(form.rentAmount),
-        depositAmount: Number(form.depositAmount)
+        depositAmount: Number(form.depositAmount),
+        totalRooms: Number(form.totalRooms) || 1
       })
     } catch (err) {
       setError(err?.response?.data?.message || 'Could not save this property.')
@@ -72,11 +74,24 @@ export default function PropertyForm({ initialValues, onSubmit, onCancel, submit
         </div>
         <div className="field">
           <label>Rent (₹/month)</label>
-          <input type="number" name="rentAmount" required value={form.rentAmount} onChange={handleChange} />
+          <input type="number" name="rentAmount" required min="1" value={form.rentAmount} onChange={handleChange} />
         </div>
         <div className="field">
           <label>Deposit (₹)</label>
-          <input type="number" name="depositAmount" required value={form.depositAmount} onChange={handleChange} />
+          <input type="number" name="depositAmount" required min="0" value={form.depositAmount} onChange={handleChange} />
+        </div>
+        {/* FIX: total rooms — lets PG/HOSTEL owners specify how many rooms are available */}
+        <div className="field">
+          <label>Total rooms</label>
+          <input
+            type="number"
+            name="totalRooms"
+            required
+            min="1"
+            value={form.totalRooms}
+            onChange={handleChange}
+            title="For a single room or flat, leave as 1. For a PG with e.g. 10 rooms, enter 10."
+          />
         </div>
       </div>
 
@@ -109,9 +124,7 @@ export default function PropertyForm({ initialValues, onSubmit, onCancel, submit
           {saving ? 'Saving…' : submitLabel}
         </button>
         {onCancel && (
-          <button className="btn btn-outline" type="button" onClick={onCancel}>
-            Cancel
-          </button>
+          <button className="btn btn-outline" type="button" onClick={onCancel}>Cancel</button>
         )}
       </div>
     </form>

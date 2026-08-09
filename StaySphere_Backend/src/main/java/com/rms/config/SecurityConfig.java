@@ -77,10 +77,16 @@ public class SecurityConfig {
                 "http://localhost:5173"
         ));
 
+        // PATCH added — the Activate/Deactivate property status update uses
+        // PATCH /api/properties/{id}/status, and without it here the
+        // browser's CORS preflight rejects the request before it ever
+        // reaches the controller (this was the "Could not update this
+        // property's status" failure).
         config.setAllowedMethods(List.of(
                 "GET",
                 "POST",
                 "PUT",
+                "PATCH",
                 "DELETE",
                 "OPTIONS"
         ));

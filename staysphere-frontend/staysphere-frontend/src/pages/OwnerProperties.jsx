@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getPropertiesByOwner, createProperty, updateProperty, deleteProperty } from '../api/properties'
+import { getPropertiesByOwner, createProperty, updateProperty, deleteProperty, updatePropertyStatus } from '../api/properties'
 import { useAuth } from '../context/AuthContext.jsx'
 import PropertyForm from '../components/PropertyForm.jsx'
 import StatusBadge from '../components/StatusBadge.jsx'
@@ -12,6 +12,7 @@ export default function OwnerProperties() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [mode, setMode] = useState(null) // null | 'create' | propertyId being edited
+  const [statusUpdatingId, setStatusUpdatingId] = useState(null)
 
   useEffect(() => {
     load()
@@ -48,6 +49,28 @@ export default function OwnerProperties() {
       load()
     } catch {
       setError('Could not delete this property.')
+    }
+  }
+
+  // NEW — activate/deactivate a property. Deactivating just stops it from
+  // receiving new bookings; existing bookings for it stay fully accessible
+  // (enforced server-side in PropertyServiceImpl / BookingServiceImpl).
+  async function handleToggleStatus(property) {
+    const nextStatus = property.propertyStatus === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
+    const confirmMsg = nextStatus === 'INACTIVE'
+      ? 'Deactivate this property? It will stop appearing for new bookings, but existing bookings are unaffected.'
+      : 'Activate this property so it can receive new bookings again?'
+    if (!window.confirm(confirmMsg)) return
+
+    setError('')
+    setStatusUpdatingId(property.propertyId)
+    try {
+      await updatePropertyStatus(property.propertyId, nextStatus)
+      load()
+    } catch {
+      setError('Could not update this property\'s status.')
+    } finally {
+      setStatusUpdatingId(null)
     }
   }
 
@@ -102,6 +125,17 @@ export default function OwnerProperties() {
                       Photos &amp; facilities
                     </Link>
                     <button className="btn btn-outline btn-sm" onClick={() => setMode(p.propertyId)}>Edit</button>
+                    {/* Activate/Deactivate — inactive properties cannot receive new bookings,
+                        but any bookings already made against this property remain accessible. */}
+                    <button
+                      className="btn btn-outline btn-sm"
+                      onClick={() => handleToggleStatus(p)}
+                      disabled={statusUpdatingId === p.propertyId}
+                    >
+                      {statusUpdatingId === p.propertyId
+                        ? 'Updating…'
+                        : p.propertyStatus === 'ACTIVE' ? 'Deactivate' : 'Activate'}
+                    </button>
                     <button className="btn btn-danger btn-sm" onClick={() => handleDelete(p.propertyId)}>Delete</button>
                   </div>
                 </div>

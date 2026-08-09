@@ -53,4 +53,7 @@ public class PropertyUpdateDTO {
     @NotBlank(message = "Pincode is required")
     @Pattern(regexp = "^[0-9]{4,10}$", message = "Pincode must be 4-10 digits")
     private String pincode;
+
+    @Min(value = 1, message = "Total rooms must be at least 1")
+    private Integer totalRooms = 1;
 }
