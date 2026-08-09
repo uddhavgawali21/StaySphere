@@ -84,4 +84,11 @@ public class PropertyController {
 		propertyService.deleteProperty(propertyId, authentication.getName());
 		return ResponseEntity.noContent().build();
 	}
+	@PatchMapping("/{propertyId}/status")
+	@PreAuthorize("hasRole('OWNER')")
+	public ResponseEntity<PropertyResponseDTO> updatePropertyStatus(@PathVariable Long propertyId,
+	        @Valid @RequestBody PropertyStatusUpdateDTO dto, Authentication authentication) {
+	    return ResponseEntity.ok(propertyService.updatePropertyStatus(propertyId, authentication.getName(), dto));
+	}
+
 }

@@ -203,7 +203,7 @@ export default function OwnerBookings() {
                 </div>
                 <div className="booking-actions">
                   <StatusBadge status={booking.bookingStatus} />
-                  {actionable && (
+                  {(canConfirm || canReject) && (
                     <>
                       <button className="btn btn-primary btn-sm" onClick={() => handleConfirm(booking.bookingId)}>
                         Approve

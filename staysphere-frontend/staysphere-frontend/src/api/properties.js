@@ -42,3 +42,6 @@ export const addFacility = (propertyId, facilityName) =>
 
 export const deleteFacility = (facilityId) =>
   apiClient.delete(`/properties/facilities/${facilityId}`).then((r) => r.data)
+
+export const updatePropertyStatus = (propertyId, propertyStatus) =>
+  apiClient.patch(`/properties/${propertyId}/status`, { propertyStatus }).then((r) => r.data)

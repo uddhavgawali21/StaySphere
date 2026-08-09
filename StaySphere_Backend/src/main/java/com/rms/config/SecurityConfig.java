@@ -88,7 +88,8 @@ public class SecurityConfig {
                 "PUT",
                 "PATCH",
                 "DELETE",
-                "OPTIONS"
+                "OPTIONS",
+                "PATCH"
         ));
 
         config.setAllowedHeaders(List.of(

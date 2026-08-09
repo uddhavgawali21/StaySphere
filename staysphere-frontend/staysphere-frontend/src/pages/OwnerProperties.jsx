@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getPropertiesByOwner, createProperty, updateProperty, deleteProperty, updatePropertyStatus } from '../api/properties'
 import { useAuth } from '../context/AuthContext.jsx'
 import PropertyForm from '../components/PropertyForm.jsx'
 import StatusBadge from '../components/StatusBadge.jsx'
 import './OwnerProperties.css'
+import { getPropertiesByOwner, createProperty, updateProperty, deleteProperty, updatePropertyStatus } from '../api/properties'
 
 export default function OwnerProperties() {
   const { user } = useAuth()
@@ -121,6 +121,12 @@ export default function OwnerProperties() {
                   </div>
                   <div className="owner-property-actions">
                     <StatusBadge status={p.propertyStatus} />
+                    <button
+                      className="btn btn-outline btn-sm"
+                      onClick={() => handleToggleStatus(p.propertyId, p.propertyStatus)}
+                    >
+                      {p.propertyStatus === 'ACTIVE' ? 'Mark Inactive' : 'Mark Active'}
+                    </button>
                     <Link className="btn btn-outline btn-sm" to={`/owner/properties/${p.propertyId}/manage`}>
                       Photos &amp; facilities
                     </Link>
